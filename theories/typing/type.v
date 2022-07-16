@@ -290,7 +290,7 @@ Section type_dist2.
   Proof. destruct n as [|n]; first by split. apply type_dist2_equivalence. Qed.
 
   (* The hierarchy of metrics:
-     dist n → type_dist2 n → dist_later n → type_dist2_later. *)
+     dist n → type_dist2 n → dist_later n → type_dist2_later n. *)
   Lemma type_dist_dist2 n ty1 ty2 : dist n ty1 ty2 → type_dist2 n ty1 ty2.
   Proof. intros EQ. split; intros; try apply dist_dist_later; apply EQ. Qed.
   Lemma type_dist2_dist_later n ty1 ty2 : type_dist2 n ty1 ty2 → dist_later n ty1 ty2.
