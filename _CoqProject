@@ -85,6 +85,7 @@ theories/typing/lib/rwlock/rwlockwriteguard.v
 theories/typing/lib/rwlock/rwlock_code.v
 theories/typing/lib/rwlock/rwlockreadguard_code.v
 theories/typing/lib/rwlock/rwlockwriteguard_code.v
+theories/typing/examples/fixpoint.v
 theories/typing/examples/get_x.v
 theories/typing/examples/rebor.v
 theories/typing/examples/unbox.v
