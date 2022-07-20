@@ -17,4 +17,11 @@ Section fixpoint.
   Qed.
 
   Definition my_list := type_fixpoint my_list_pre.
+
+  Local Lemma my_list_unfold :
+    my_list ≡ my_list_pre my_list.
+  Proof. apply type_fixpoint_unfold. Qed.
+
+  Lemma my_list_size : my_list.(ty_size) = 2%nat.
+  Proof. rewrite my_list_unfold. done. Qed.
 End fixpoint.

@@ -46,7 +46,7 @@ Section fixpoint.
   Context `{!typeGS Σ}.
   Context (T : type → type) {HT: TypeContractive T}.
 
-  Global Instance fixpoint_copy :
+  Global Instance type_fixpoint_copy :
     (∀ `(!Copy ty), Copy (T ty)) → Copy (type_fixpoint T).
   Proof.
     intros ?. unfold type_fixpoint. apply fixpointK_ind.
@@ -65,7 +65,7 @@ Section fixpoint.
         solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
   Qed.
 
-  Global Instance fixpoint_send :
+  Global Instance type_fixpoint_send :
     (∀ `(!Send ty), Send (T ty)) → Send (type_fixpoint T).
   Proof.
     intros ?. unfold type_fixpoint. apply fixpointK_ind.
@@ -77,7 +77,7 @@ Section fixpoint.
       apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
-  Global Instance fixpoint_sync :
+  Global Instance type_fixpoint_sync :
     (∀ `(!Sync ty), Sync (T ty)) → Sync (type_fixpoint T).
   Proof.
     intros ?. unfold type_fixpoint. apply fixpointK_ind.
@@ -89,12 +89,11 @@ Section fixpoint.
       apply bi.limit_preserving_entails; solve_proper.
   Qed.
 
+  Lemma type_fixpoint_unfold : type_fixpoint T ≡ T (type_fixpoint T).
+  Proof. apply fixpointK_unfold. by apply type_contractive_ne. Qed.
+
   Lemma fixpoint_unfold_eqtype E L : eqtype E L (type_fixpoint T) (T (type_fixpoint T)).
-  Proof.
-    unfold eqtype, subtype, type_incl.
-    setoid_rewrite <-fixpointK_unfold; [| by apply type_contractive_ne, _..].
-    split; iIntros (qmax qL) "_ !> _"; (iSplit; first done); iSplit; iIntros "!>*$".
-  Qed.
+  Proof. apply type_equal_eqtype, type_equal_equiv, type_fixpoint_unfold. Qed.
 End fixpoint.
 
 Section subtyping.
