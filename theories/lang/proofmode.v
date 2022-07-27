@@ -21,7 +21,8 @@ Lemma tac_wp_pure `{!lrustGS Σ} K Δ Δ' E e1 e2 φ n Φ :
   envs_entails Δ (WP fill K e1 @ E {{ Φ }}).
 Proof.
   rewrite envs_entails_unseal=> ??? HΔ'. rewrite into_laterN_env_sound /=.
-  rewrite -wp_bind HΔ' -wp_pure_step_later //. by rewrite -wp_bind_inv.
+  rewrite -wp_bind HΔ' -wp_pure_step_later //. rewrite -wp_bind_inv.
+  f_equiv. apply wand_intro_l. by rewrite sep_elim_r.
 Qed.
 
 Tactic Notation "wp_pure" open_constr(efoc) :=

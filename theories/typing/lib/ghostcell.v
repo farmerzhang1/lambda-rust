@@ -618,7 +618,7 @@ Section ghostcell.
     iMod "Hc".
     iDestruct "Hc" as "[Hshr Hβ]".
     iMod ("Hclose" with "Hβ HL") as "HL".
-    iIntros "!>".
+    iIntros "!> _".
     do 2 wp_let.
     iApply (type_type _ _ _ [c ◁  box (&shr{β} ty)]
               with "[] LFT HE Hna HL HC [Hshr]"); last first.
@@ -721,7 +721,7 @@ Section ghostcell.
     iMod "Hc".
     iDestruct "Hc" as "[Hshr Hβ]".
     iMod ("Hclose" with "Hβ HL") as "HL".
-    iIntros "!>".
+    iIntros "!> _".
     do 2 wp_let.
     iApply (type_type _ _ _ [c ◁  box (&uniq{β} ty)]
               with "[] LFT HE Hna HL HC [Hshr]"); last first.
