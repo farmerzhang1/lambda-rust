@@ -357,7 +357,7 @@ Section typing.
     ⊢ typed_body E L C T (call: p ps → k).
   Proof.
     intros Hfn HL HE HTT' HC HT'T''.
-    rewrite -typed_body_mono /flip; last done; first by eapply type_call'.
+    iApply typed_body_mono; [| |done|by iApply type_call']; simpl.
     - etrans.
       + eapply (incl_cctx_incl _ [_]); by intros ? ->%elem_of_list_singleton.
       + apply cctx_incl_cons; first done. intros args. by inv_vec args.
