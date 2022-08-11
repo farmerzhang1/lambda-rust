@@ -7,10 +7,6 @@ From iris.prelude Require Import options.
 Section product.
   Context `{!typeGS Σ}.
 
-  (* TODO: Find a better spot for this. *)
-  Lemma Z_nat_add (n1 n2 : nat) : Z.to_nat (n1 + n2) = (n1 + n2)%nat.
-  Proof. rewrite Z2Nat.inj_add; [|lia..]. rewrite !Nat2Z.id //. Qed.
-
   (* "Pre"-unit.  We later define the full unit as the empty product.  That's
      convertible, but products are opaque in some hint DBs, so this does make a
      difference. *)

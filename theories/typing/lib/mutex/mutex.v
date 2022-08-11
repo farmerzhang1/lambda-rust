@@ -29,7 +29,7 @@ Section mutex.
        ty_own tid vl :=
          match vl return _ with
          | #(LitInt z) :: vl' =>
-           ⌜∃ b, z = Z_of_bool b⌝ ∗ ty.(ty_own) tid vl'
+           ⌜∃ b, z = Z.b2z b⌝ ∗ ty.(ty_own) tid vl'
          | _ => False end;
        ty_shr κ tid l := ∃ κ', κ ⊑ κ' ∗
            &at{κ, mutexN} (lock_proto l (&{κ'}((l +ₗ 1) ↦∗: ty.(ty_own) tid)))
@@ -46,10 +46,10 @@ Section mutex.
     iDestruct "H" as "[>EQ Hown]". iDestruct "EQ" as %[b ->].
     (* We need to turn the ohne borrow into two, so we close it -- and then
        we open one of them again. *)
-    iMod ("Hclose" $! ((∃ b, l ↦ #(Z_of_bool b)) ∗ ((l +ₗ 1) ↦∗: ty_own ty tid))%I
+    iMod ("Hclose" $! ((∃ b, l ↦ #(Z.b2z b)) ∗ ((l +ₗ 1) ↦∗: ty_own ty tid))%I
           with "[] [Hl H↦ Hown]") as "[Hbor Htok]".
     { clear. iNext. iIntros "[Hl Hown] !>". iNext. iDestruct "Hl" as (b) "Hl".
-      iDestruct "Hown" as (vl) "[H↦ Hown]". iExists (#(Z_of_bool b) :: vl).
+      iDestruct "Hown" as (vl) "[H↦ Hown]". iExists (#(Z.b2z b) :: vl).
       rewrite heap_mapsto_vec_cons. iFrame. iPureIntro. eauto. }
     { iNext. iSplitL "Hl"; first by eauto.
       iExists vl. iFrame. }

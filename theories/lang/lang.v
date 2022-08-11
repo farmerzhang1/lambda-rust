@@ -168,11 +168,8 @@ Qed.
 (** The stepping relation *)
 (* Be careful to make sure that poison is always stuck when used for anything
    except for reading from or writing to memory! *)
-Definition Z_of_bool (b : bool) : Z :=
-  if b then 1 else 0.
-
 Definition lit_of_bool (b : bool) : base_lit :=
-  LitInt $ Z_of_bool b.
+  LitInt $ Z.b2z b.
 
 Definition shift_loc (l : loc) (z : Z) : loc := (l.1, l.2 + z).
 

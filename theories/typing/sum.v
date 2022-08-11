@@ -210,7 +210,7 @@ Section sum.
         iDestruct ("Htlclose" with "Htl") as "Htl".
         iDestruct (heap_mapsto_agree with "[Hown1 Hown2]") as "#Heq".
         { iDestruct "Hown1" as "[$ _]". iDestruct "Hown2" as "[$ _]". }
-        iDestruct "Heq" as %[= ->%Z_of_nat_inj].
+        iDestruct "Heq" as %[= ->%Nat2Z.inj].
         iMod ("Hclose'" with "Htl [$HownC1 $HownC2]") as "[$ ?]".
         iMod ("Hclose" with "[$Hown1 $Hown2]") as "$". by iFrame.
   Qed.
