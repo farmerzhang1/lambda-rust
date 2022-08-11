@@ -173,7 +173,7 @@ Section ref_functions.
         iApply "H†". replace 1%Qp with (q'+q'')%Qp by naive_solver. iFrame.
       - simpl in *. setoid_subst. iExists (Some (ν, false, q0, n')). iFrame.
         iAssert (lrc ↦ #(Z.pos n'))%I with "[H↦lrc]" as "$".
-        { rewrite pos_op_plus Z.sub_1_r -Pos2Z.inj_pred; last lia.
+        { rewrite pos_op_add Z.sub_1_r -Pos2Z.inj_pred; last lia.
           by rewrite Pos.add_1_l Pos.pred_succ. }
         iMod (own_update with "H●◯") as "$".
         { apply auth_update_dealloc.

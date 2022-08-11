@@ -95,7 +95,7 @@ Section fn.
       { intros Hprop. apply Hprop, list_fmap_ne; last first.
         - symmetry. eapply Forall2_impl; first apply Hfp. intros.
           apply dist_later_dist, type_dist2_dist_later. done.
-        - apply _. }
+        - solve_proper. }
       clear. intros n tid p i x y. rewrite list_dist_lookup=>/(_ i).
       case _ : (x !! i)=>[tyx|]; case  _ : (y !! i)=>[tyy|];
         inversion_clear 1; [solve_proper|done].

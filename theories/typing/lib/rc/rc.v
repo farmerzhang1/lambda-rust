@@ -368,7 +368,7 @@ Section code.
                                (?&?&[=]&?)]]; first done. setoid_subst.
         iDestruct "Hproto" as (q'') "(Hl1 & Hl2 & Hl† & >Hqq' & Hν & Hν†)".
         iDestruct "Hqq'" as %Hqq'. wp_read. iApply "HΦ". iFrame "Hl1". iRight.
-        iSplit; first by rewrite !pos_op_plus; auto with lia. iSplit; iIntros "H↦".
+        iSplit; first by rewrite !pos_op_add; auto with lia. iSplit; iIntros "H↦".
         * iMod ("Hclose" with "[- Htok Hν1]") as "$"; last by auto 10 with iFrame.
           iFrame. iExists _. iFrame. auto with iFrame.
         * iMod (own_update_2 with "Hst Htok") as "Hst".
@@ -378,7 +378,7 @@ Section code.
           iApply "Hclose". iFrame. iExists _. iFrame. iExists (q+q'')%Qp. iFrame.
           iSplitL; first last.
           { rewrite [(_+_)%Qp]assoc [(q'+_)%Qp]comm. auto. }
-          rewrite pos_op_plus Z.sub_1_r -Pos2Z.inj_pred; last lia.
+          rewrite pos_op_add Z.sub_1_r -Pos2Z.inj_pred; last lia.
           by rewrite Pos.add_1_l Pos.pred_succ.
   Qed.
 

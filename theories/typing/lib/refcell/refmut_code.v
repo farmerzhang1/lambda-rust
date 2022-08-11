@@ -148,7 +148,7 @@ Section refmut_functions.
           apply (cancel_local_update_unit (writing_stR q _)), _. }
         iDestruct "INV" as "(H† & Hq & _)".
         rewrite /= (_:Z.neg (1%positive ⋅ n') + 1 = Z.neg n');
-          last (rewrite pos_op_plus; lia). iFrame.
+          last (rewrite pos_op_add; lia). iFrame.
         iApply step_fupd_intro; [set_solver+|]. iSplitL; [|done].
         iDestruct "Hq" as (q' ?) "?". iExists (q+q')%Qp. iFrame.
         rewrite assoc (comm _ q'' q) //. }
