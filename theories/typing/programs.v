@@ -204,9 +204,9 @@ Section typing_rules.
     iApply ("He" $! (κ' ⊓ Λ) with "LFT HE Htl [HL Htk] HC HT").
     rewrite /llctx_interp /=. iFrame "HL".
     iExists Λ. iSplit; first done.
-    destruct (decide (1 ≤ qmax)%Qp) as [_|Hlt%Qp_lt_nge].
+    destruct (decide (1 ≤ qmax)%Qp) as [_|Hlt%Qp.lt_nge].
     - by iFrame "#∗".
-    - apply Qp_lt_sum in Hlt as [q' ->]. iDestruct "Htk" as "[$ Htk]".
+    - apply Qp.lt_sum in Hlt as [q' ->]. iDestruct "Htk" as "[$ Htk]".
       iIntros "Htk'". iApply "Hinh". iFrame.
   Qed.
 

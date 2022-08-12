@@ -194,11 +194,11 @@ Section rwlock_functions.
               split; [split|].
               - by rewrite /= Hag agree_idemp.
               - apply frac_valid. rewrite /= -Hqq' comm_L.
-                by apply Qp_add_le_mono_l, Qp_div_le.
+                by apply Qp.add_le_mono_l, Qp.div_le.
               - done. }
             iFrame "∗#". iExists _. rewrite Z.add_comm /=. iFrame. iExists _, _.
             iFrame "∗#". iSplitR; first by rewrite /= Hag agree_idemp.
-            rewrite (comm Qp_add) (assoc Qp_add) Qp_div_2 (comm Qp_add). auto.
+            rewrite (comm Qp.add) (assoc Qp.add) Qp.div_2 (comm Qp.add). auto.
           - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]"; first solve_ndisj.
             iMod (own_update with "Hownst") as "[Hownst Hreading]"; first by apply
               auth_update_alloc, (op_local_update_discrete _ _ (reading_st (1/2)%Qp ν)).
@@ -210,7 +210,7 @@ Section rwlock_functions.
             iMod (ty_share with "LFT Hst Htok") as "[#Hshr Htok]"; first solve_ndisj.
             iFrame "#". iDestruct ("Hclose" with "Htok") as "[$ Htok2]".
             iExists _. iFrame. iExists _, _. iSplitR; first done. iFrame "#∗".
-            rewrite Qp_div_2. iSplitL; last done.
+            rewrite Qp.div_2. iSplitL; last done.
             iIntros "!> Hν". iApply "Hh". rewrite -lft_dead_or. auto. }
         iMod ("Hclose''" with "[$INV]") as "Hβtok1". iModIntro. wp_case.
         iMod ("Hclose'" with "[$]") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".

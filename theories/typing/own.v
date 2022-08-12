@@ -23,7 +23,7 @@ Section own.
     destruct n as [|n].
     - iSplit; iIntros "H /="; auto.
     - assert (Z.of_nat (S n) = 0 ↔ False) as -> by done. rewrite right_id.
-      by rewrite /freeable_sz Qp_div_diag.
+      by rewrite /freeable_sz Qp.div_diag.
   Qed.
 
   Lemma freeable_sz_full_S n l : freeable_sz (S n) (S n) l ⊣⊢ †{1}l…(S n).
@@ -40,7 +40,7 @@ Section own.
       + by iIntros "[[]?]".
       + by iIntros "[]".
     - rewrite heap_freeable_op_eq. f_equiv; [|done..].
-      by rewrite -Qp_div_add_distr pos_to_Qp_add -Nat2Pos.inj_add.
+      by rewrite -Qp.div_add_distr pos_to_Qp_add -Nat2Pos.inj_add.
   Qed.
 
   (* Make sure 'simpl' doesn't unfold. *)

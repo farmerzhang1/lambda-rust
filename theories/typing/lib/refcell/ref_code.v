@@ -74,7 +74,7 @@ Section ref_functions.
       split; [split|done].
       - by rewrite /= agree_idemp.
       - apply frac_valid. rewrite /= -Hq'q'' comm_L.
-        by apply Qp_add_le_mono_l, Qp_div_le. }
+        by apply Qp.add_le_mono_l, Qp.div_le. }
     wp_apply wp_new; [done..|]. iIntros (lr) "(?&Hlr)".
     iAssert (lx' ↦∗{qlx'} [ #lv; #lrc])%I  with "[H↦1 H↦2]" as "H↦".
     { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton. iFrame. }
@@ -83,7 +83,7 @@ Section ref_functions.
     iMod ("Hcloseδ" with "[H↦lrc H● Hν1 Hshr' H†] Hna") as "[Hδ Hna]".
     { iExists (Some (_, false, _, _)). rewrite Z.add_comm -Some_op -!pair_op agree_idemp.
       iFrame. iExists _. iFrame.
-      rewrite (comm Qp_add) (assoc Qp_add) Qp_div_2 (comm Qp_add). auto. }
+      rewrite (comm Qp.add) (assoc Qp.add) Qp.div_2 (comm Qp.add). auto. }
     iMod ("Hcloseβ" with "Hδ") as "Hβ". iMod ("Hcloseα1" with "[$H↦]") as "Hα2".
     iMod ("Hclose'" with "[$Hα1 $Hα2] HL") as "HL". iMod ("Hclose" with "Hβ HL") as "HL".
     iApply (type_type _ _ _
@@ -339,7 +339,7 @@ Section ref_functions.
       split; [split|done].
       - by rewrite /= agree_idemp.
       - apply frac_valid. rewrite /= -Hq1q2 comm_L.
-        by apply Qp_add_le_mono_l, Qp_div_le. }
+        by apply Qp.add_le_mono_l, Qp.div_le. }
     wp_let. wp_read. wp_let. wp_op. wp_write.
     wp_apply (wp_delete _ _ _ [_; _] with "[Href↦1 Href↦2 Href†]")=>//.
     { rewrite heap_mapsto_vec_cons heap_mapsto_vec_singleton /= freeable_sz_full.
@@ -351,7 +351,7 @@ Section ref_functions.
     iMod ("Hclosena" with "[H↦lrc H● Hν1 Hshr' H†] Hna") as "[Hβ Hna]".
     { iExists (Some (_, false, _, _)). rewrite Z.add_comm -Some_op -!pair_op agree_idemp.
       iFrame. iExists _. iFrame.
-      rewrite (comm Qp_add) (assoc Qp_add) Qp_div_2 (comm Qp_add). auto. }
+      rewrite (comm Qp.add) (assoc Qp.add) Qp.div_2 (comm Qp.add). auto. }
     iMod ("Hβclose" with "Hβ") as "Hα". iMod ("Hclose1" with "Hα HL") as "HL".
     iApply (type_type _ [_] _ [ #lrefs ◁ box (Π[ref α ty1; ref α ty2]) ]
        with "[] LFT HE Hna HL Hk"); first last.

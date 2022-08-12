@@ -271,9 +271,9 @@ Section typing.
       iMod (lft_create with "LFT") as (ϝ_inner) "[Htk #Hend]"; first done.
       set (ϝ := ϝ_inner ⊓ lft_intersect_list κs).
       iSpecialize ("Hf" $! x ϝ _ vl). iDestruct (HE ϝ with "HL") as "#HE'".
-      destruct (Qp_lower_bound qκs 1) as (q0 & q'1 & q'2 & -> & Hsum1).
+      destruct (Qp.lower_bound qκs 1) as (q0 & q'1 & q'2 & -> & Hsum1).
       rewrite Hsum1. assert (q0 < 1)%Qp as Hq0.
-      { apply Qp_lt_sum. eauto. }
+      { apply Qp.lt_sum. eauto. }
       clear Hsum1.
       iDestruct "Htk" as "[Htk1 Htk2]".
       iDestruct "Hκs" as "[Hκs1 Hκs2]".
@@ -288,7 +288,7 @@ Section typing.
         done.
       + iSplitL; last done. iExists ϝ. rewrite left_id. iSplit; first done.
         rewrite decide_False; last first.
-        { apply Qp_lt_nge. done. }
+        { apply Qp.lt_nge. done. }
         subst ϝ. rewrite -!lft_tok_sep. iFrame. iIntros "[Htk1 _]".
         rewrite -lft_dead_or. rewrite -bi.or_intro_l. iApply "Hend". iFrame.
       + iIntros (y) "IN {Hend}". iDestruct "IN" as %->%elem_of_list_singleton.
@@ -296,7 +296,7 @@ Section typing.
         iDestruct "Hϝ" as  (κ') "(EQ & Htk & _)". iDestruct "EQ" as %EQ.
         rewrite /= left_id in EQ. subst κ' ϝ.
         rewrite decide_False; last first.
-        { apply Qp_lt_nge. done. }
+        { apply Qp.lt_nge. done. }
         rewrite -lft_tok_sep. iDestruct "Htk" as "[_ Hκs1]". wp_rec.
         iApply ("Hk" with "Htl HL [$Hκs1 $Hκs2]"). rewrite tctx_hasty_val. done.
       + rewrite /tctx_interp vec_to_list_map !zip_with_fmap_r

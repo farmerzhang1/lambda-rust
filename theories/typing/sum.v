@@ -200,7 +200,7 @@ Section sum.
         trans (shr_locsE (l +ₗ 1) (max_list_with ty_size tyl)).
         - apply shr_locsE_subseteq. lia.
         - set_solver+. }
-      destruct (Qp_lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
+      destruct (Qp.lower_bound q'1 q'2) as (q' & q'01 & q'02 & -> & ->).
       rewrite -(heap_mapsto_pred_op _ q' q'02); last (by intros; apply ty_size_eq).
       rewrite (fractional (Φ := λ q, _ ↦{q} _ ∗ _ ↦∗{q}: _)%I).
       iDestruct "HownC" as "[HownC1 HownC2]". iDestruct "Hown" as "[Hown1 Hown2]".

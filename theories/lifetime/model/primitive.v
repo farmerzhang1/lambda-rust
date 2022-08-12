@@ -371,7 +371,7 @@ Lemma lft_intersect_acc κ κ' q q' :
   q.[κ] -∗ q'.[κ'] -∗ ∃ q'', q''.[κ ⊓ κ'] ∗ (q''.[κ ⊓ κ'] -∗ q.[κ] ∗ q'.[κ']).
 Proof.
   iIntros "Hκ Hκ'".
-  destruct (Qp_lower_bound q q') as (qq & q0 & q'0 & -> & ->).
+  destruct (Qp.lower_bound q q') as (qq & q0 & q'0 & -> & ->).
   iExists qq. rewrite -lft_tok_sep.
   iDestruct "Hκ" as "[$$]". iDestruct "Hκ'" as "[$$]". auto.
 Qed.

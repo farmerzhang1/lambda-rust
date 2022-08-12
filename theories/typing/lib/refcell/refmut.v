@@ -56,7 +56,7 @@ Section refmut.
     iMod (bor_sep with "LFT H") as "[_ H]"; first done.
     iMod (bor_sep with "LFT H") as "[H _]"; first done.
     iMod (bor_fracture (λ q, (q' * q).[ν])%I with "LFT [H]") as "H"; first done.
-    { by rewrite Qp_mul_1_r. }
+    { by rewrite Qp.mul_1_r. }
     iDestruct (frac_bor_lft_incl with "LFT H") as "#Hκν". iClear "H".
     iExists _, _. iFrame "H↦". iApply delay_sharing_nested; try done.
     rewrite -assoc. iApply lft_intersect_mono; first by iApply lft_incl_refl.

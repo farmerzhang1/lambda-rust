@@ -76,16 +76,16 @@ Section frac_bor.
     iIntros "#Hφ (H & Hown & Hφ1)". iNext.
     iDestruct "H" as (qφ) "(Hφqφ & Hown' & [%|Hq])".
     { subst. iCombine "Hown'" "Hown" as "Hown".
-      by iDestruct (own_valid with "Hown") as %Hval%Qp_not_add_le_l. }
+      by iDestruct (own_valid with "Hown") as %Hval%Qp.not_add_le_l. }
     rewrite /frac_bor_inv. iApply bi.sep_exist_r. iExists (q + qφ)%Qp.
     iDestruct "Hq" as (q' Hqφq') "Hq'κ". iCombine "Hown'" "Hown" as "Hown".
     iDestruct (own_valid with "Hown") as %Hval. rewrite comm_L. iFrame "Hown".
     iCombine "Hφ1 Hφqφ" as "Hφq". iDestruct ("Hφ" with "Hφq") as "$".
-    assert (q ≤ q')%Qp as [[r ->]%Qp_lt_sum|<-]%Qp_le_lteq.
-    { apply (Qp_add_le_mono_l _ _ qφ). by rewrite Hqφq'. }
+    assert (q ≤ q')%Qp as [[r ->]%Qp.lt_sum|<-]%Qp.le_lteq.
+    { apply (Qp.add_le_mono_l _ _ qφ). by rewrite Hqφq'. }
     - iDestruct "Hq'κ" as "[$ Hr]".
       iRight. iExists _. iIntros "{$Hr} !%".
-      by rewrite (comm_L Qp_add q) -assoc_L.
+      by rewrite (comm_L Qp.add q) -assoc_L.
     - iFrame "Hq'κ". iLeft. iPureIntro. rewrite comm_L. done.
   Qed.
 
@@ -96,7 +96,7 @@ Section frac_bor.
   Proof.
     iIntros "#Hφ [H Hκ']". iNext.
     iDestruct "H" as (qφ) "(Hφqφ & Hown & Hq)".
-    destruct (Qp_lower_bound qκ' qφ) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
+    destruct (Qp.lower_bound qκ' qφ) as (qq & qκ'0 & qφ0 & Hqκ' & Hqφ).
     iApply bi.sep_exist_l. iExists qq.
     iApply bi.sep_exist_l. iExists qκ'0.
     subst qκ' qφ. rewrite /frac_bor_inv.

@@ -117,7 +117,7 @@ Section product.
       set_solver. }
     iDestruct (na_own_acc with "Htl") as "[$ Htlclose]".
     { generalize (shr_locsE_shift l ty1.(ty_size) ty2.(ty_size)). simpl. set_solver+. }
-    destruct (Qp_lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
+    destruct (Qp.lower_bound q1 q2) as (qq & q'1 & q'2 & -> & ->). iExists qq.
     iDestruct "H1" as (vl1) "[H↦1 H1]". iDestruct "H2" as (vl2) "[H↦2 H2]".
     rewrite !split_prod_mt.
     iDestruct (ty_size_eq with "H1") as "#>%".

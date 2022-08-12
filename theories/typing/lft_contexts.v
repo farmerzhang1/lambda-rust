@@ -64,14 +64,14 @@ Section lft_contexts.
   Proof.
     destruct x as [κ κs]. iIntros (q q'). iSplit; iIntros "H".
     - iDestruct "H" as (κ0) "(% & Hq)".
-      rewrite Qp_mul_add_distr_l.
+      rewrite Qp.mul_add_distr_l.
       iDestruct "Hq" as "[Hq Hq']".
       iSplitL "Hq"; iExists _; by iFrame "∗%".
     - iDestruct "H" as "[Hq Hq']".
       iDestruct "Hq" as (κ0) "(% & Hq)".
       iDestruct "Hq'" as (κ0') "(% & Hq')". simpl in *.
       rewrite (inj ((lft_intersect_list κs) ⊓.) κ0' κ0); last congruence.
-      iExists κ0. rewrite Qp_mul_add_distr_l. by iFrame "∗%".
+      iExists κ0. rewrite Qp.mul_add_distr_l. by iFrame "∗%".
   Qed.
 
   Lemma llctx_elt_interp_acc_noend qmax x :
@@ -80,10 +80,10 @@ Section lft_contexts.
   Proof.
     destruct x as [κ κs].
     iIntros "H". iDestruct "H" as (κ0) "(% & Hq & Hend)". iSplitL "Hq".
-    { iExists κ0. rewrite Qp_mul_1_r. by iFrame "∗%". }
+    { iExists κ0. rewrite Qp.mul_1_r. by iFrame "∗%". }
     iIntros "H". iDestruct "H" as (κ0') "(% & Hq')". simpl in *.
     rewrite (inj ((lft_intersect_list κs) ⊓.) κ0' κ0); last congruence.
-    iExists κ0. rewrite Qp_mul_1_r. by iFrame "∗%".
+    iExists κ0. rewrite Qp.mul_1_r. by iFrame "∗%".
   Qed.
 
   Definition llctx_interp (qmax : Qp) (L : llctx) : iProp Σ :=
@@ -269,7 +269,7 @@ Section lft_contexts.
   Proof.
     iIntros (? Hal) "#HE [HL1 HL2]".
     iMod (Hal with "HE HL1") as (q') "[Htok Hclose]"; first done.
-    destruct (Qp_lower_bound (q/2) q') as (qq & q0  & q'0 & Hq & ->). rewrite Hq.
+    destruct (Qp.lower_bound (q/2) q') as (qq & q0  & q'0 & Hq & ->). rewrite Hq.
     iExists qq. iDestruct "HL2" as "[$ HL]". iDestruct "Htok" as "[$ Htok]".
     iIntros "!> Htok' HL'". iCombine "HL'" "HL" as "HL". rewrite -Hq. iFrame.
     iApply "Hclose". iFrame.
@@ -300,7 +300,7 @@ Section lft_contexts.
     inversion_clear Hκs.
     iIntros "HL". iMod (lctx_lft_alive_tok_noend κ with "HE HL")as (q') "(Hκ & HL & Hclose1)"; [solve_typing..|].
     iMod ("IH" with "[//] HL") as (q'') "(Hκs & HL & Hclose2)".
-    destruct (Qp_lower_bound q' q'') as (qq & q0  & q'0 & -> & ->).
+    destruct (Qp.lower_bound q' q'') as (qq & q0  & q'0 & -> & ->).
     iExists qq. iDestruct "HL" as "[$ HL2]". iDestruct "Hκ" as "[Hκ1 Hκ2]".
     iDestruct "Hκs" as "[Hκs1 Hκs2]". iModIntro. simpl. rewrite -lft_tok_sep. iSplitL "Hκ1 Hκs1".
     { by iFrame. }
@@ -343,13 +343,13 @@ Section lft_contexts.
       - iDestruct "HL1" as "[HL1 HL2]".
         iMod (Hκ with "HE HL1") as (q') "[Htok' Hclose]"; first done.
         iMod ("IH" with "HL2") as (q'') "[Htok'' Hclose']".
-        destruct (Qp_lower_bound q' q'') as (q0 & q'2 & q''2 & -> & ->).
+        destruct (Qp.lower_bound q' q'') as (q0 & q'2 & q''2 & -> & ->).
         iExists q0. rewrite -lft_tok_sep. iDestruct "Htok'" as "[$ Hr']".
         iDestruct "Htok''" as "[$ Hr'']". iIntros "!>[Hκ Hfold]".
         iMod ("Hclose" with "[$Hκ $Hr']") as "$". iApply "Hclose'". iFrame. }
-    iDestruct "H" as (q') "[Htok' Hclose']". rewrite -{5}(Qp_div_2 qL).
+    iDestruct "H" as (q') "[Htok' Hclose']". rewrite -{5}(Qp.div_2 qL).
     set (qeff := (if decide (1 ≤ qmax) then 1 else qmax)%Qp).
-    destruct (Qp_lower_bound q' (qeff * (qL/2))) as (q0 & q'2 & q''2 & -> & Hmax).
+    destruct (Qp.lower_bound q' (qeff * (qL/2))) as (q0 & q'2 & q''2 & -> & Hmax).
     iExists q0. rewrite -(lft_tok_sep q0). rewrite Hmax.
     iDestruct "Htok" as "[$ Htok]".
     iDestruct "Htok'" as "[$ Htok']". iIntros "!>[Hfold Hκ0]".

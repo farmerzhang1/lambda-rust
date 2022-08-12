@@ -185,11 +185,11 @@ Section refcell_functions.
             split; [split|].
             - by rewrite /= agree_idemp.
             - apply frac_valid. rewrite /= -Hqq' comm_L.
-              by apply Qp_add_le_mono_l, Qp_div_le.
+              by apply Qp.add_le_mono_l, Qp.div_le.
             - done. }
           iFrame "∗#". iExists (Some (ν, false, _, _)). iFrame "∗#".
           rewrite [_ ⋅ _]comm -Some_op -!pair_op agree_idemp. iFrame.
-          iExists _. iFrame. rewrite -(assoc Qp_add) Qp_div_2 //.
+          iExists _. iFrame. rewrite -(assoc Qp.add) Qp.div_2 //.
         - iMod (lft_create with "LFT") as (ν) "[[Htok1 Htok2] #Hhν]"; first done.
           iMod (own_update with "Hownst") as "[Hownst Hreading]"; first by apply
             auth_update_alloc, (op_local_update_discrete _ _ (reading_stR (1/2)%Qp ν)).
@@ -207,7 +207,7 @@ Section refcell_functions.
             { set_solver+. }
             * rewrite -lft_dead_or. auto.
             * done.
-          + iExists _. iFrame. by rewrite Qp_div_2. }
+          + iExists _. iFrame. by rewrite Qp.div_2. }
       iMod ("Hclose''" with "[$INV] Hna") as "[Hβtok1 Hna]".
       iMod ("Hclose'" with "[$Hβtok1 $Hβtok2]") as "Hα".
       iMod ("Hclose" with "Hα HL") as "HL".
@@ -287,7 +287,7 @@ Section refcell_functions.
           { set_solver+. }
           * rewrite -lft_dead_or. auto.
           * done.
-        - iSplitL; [|done]. iExists _. iFrame. by rewrite Qp_div_2. }
+        - iSplitL; [|done]. iExists _. iFrame. by rewrite Qp.div_2. }
       iMod ("Hclose'" with "Hβtok") as "Hα". iMod ("Hclose" with "Hα HL") as "HL".
       iApply (type_type _ _ _
         [ x ◁ box (&shr{α}(refcell ty)); r ◁ box (uninit 3); #lref ◁ box (refmut α ty)]

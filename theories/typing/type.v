@@ -496,7 +496,7 @@ Section type.
     iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
     { iNext. iDestruct (st_size_eq with "Hown") as %->.
       iDestruct (st_size_eq with "Hown'") as %->. done. }
-    iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp_div_2.
+    iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp.div_2.
     iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
   Qed.
 

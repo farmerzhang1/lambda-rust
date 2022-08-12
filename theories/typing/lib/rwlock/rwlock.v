@@ -161,7 +161,7 @@ Section rwlock.
       iDestruct ("Hclose" with "Htok") as "[$ Htok]".
       iExists γ, _. iFrame "Hst Hn". iExists _, _. iIntros "{$Hshr}".
       iSplitR; first by auto. iFrame "Htok2". iSplitR; first done.
-      rewrite Qp_div_2.  iSplitL; last by auto.
+      rewrite Qp.div_2.  iSplitL; last by auto.
       iIntros "!> !> Hν". iDestruct (lft_tok_dead with "Htok Hν") as "[]".
     - iMod (own_alloc (● writing_st)) as (γ) "Hst". { by apply auth_auth_valid. }
       iFrame. iExists _, _. eauto with iFrame.

@@ -151,14 +151,14 @@ Section refcell.
       iMod (ty_share with "LFT Hvl Htok") as "[Hshr Htok]"; first done.
       iDestruct ("Hclose" with "Htok") as "[$ Htok]".
       iExists γ, _. iFrame "Hst Hn Hshr".
-      iSplitR "Htok2"; last by iExists _; iFrame; rewrite Qp_div_2.
+      iSplitR "Htok2"; last by iExists _; iFrame; rewrite Qp.div_2.
       iIntros "!> !> Hν". iMod ("Hhν" with "Hν") as "Hν". iModIntro. iNext. iMod "Hν".
       iApply fupd_mask_mono; last iApply "Hh"; first set_solver+. rewrite -lft_dead_or. auto.
     - iMod (own_alloc (● (refcell_st_to_R $ Some (static, true, (1/2)%Qp, n)))) as (γ) "Hst".
       { by apply auth_auth_valid. }
       iFrame "Htok'". iExists γ, _. iFrame. iSplitR.
       { rewrite -step_fupd_intro; first auto. set_solver+. }
-      iSplitR; [|done]. iExists (1/2)%Qp. rewrite Qp_div_2. iSplitR; [done|].
+      iSplitR; [|done]. iExists (1/2)%Qp. rewrite Qp.div_2. iSplitR; [done|].
       iApply lft_tok_static.
   Qed.
   Next Obligation.

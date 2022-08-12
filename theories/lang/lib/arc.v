@@ -190,7 +190,7 @@ Section arc.
                       ◯ (Some $ Cinl ((1/2)%Qp, xH, None), O))))
       as (γ) "[H● H◯]"; first by apply auth_both_valid_discrete.
     iExists _, _. iFrame. iApply inv_alloc. iExists _. iFrame. iExists _. iFrame.
-    rewrite Qp_div_2. auto.
+    rewrite Qp.div_2. auto.
   Qed.
 
   Lemma create_weak E l :
@@ -213,7 +213,7 @@ Section arc.
     destruct st, Hincl as [[=]|(?&?&[= <-]&?&[Hincl|Hincl%csum_included])];
       simpl in *; subst.
     - setoid_subst. iExists _, _, _, _. by iSplit.
-    - destruct Hincl as [->|[(?&[[??]?]&[=<-]&->&[[[??]%frac_included%Qp_lt_sum
+    - destruct Hincl as [->|[(?&[[??]?]&[=<-]&->&[[[??]%frac_included%Qp.lt_sum
         ?%pos_included]%prod_included _]%prod_included)|(?&?&[=]&?)]]; first done.
       iExists _, _, _, _. iSplit=>//. simpl in *. destruct decide; [subst;lia|eauto].
   Qed.
@@ -275,11 +275,11 @@ Section arc.
          (op_local_update_discrete _ _ (Some (Cinl ((qq/2)%Qp, 1%positive, None))))
            =>-[/= Hqa ?]. split;[split|]=>//=; last by rewrite left_id.
         apply frac_valid. rewrite -Hq comm_L.
-        by apply Qp_add_le_mono_l, Qp_div_le. }
+        by apply Qp.add_le_mono_l, Qp.div_le. }
       iMod ("Hclose2" with "Hown") as "HP". iModIntro.
       iMod ("Hclose1" with "[Hl Hw H● HP1']") as "_".
       { iExists _. iFrame. iExists _. rewrite /= [xH ⋅ _]comm_L. iFrame.
-        rewrite [(qq / 2)%Qp ⋅ _]comm frac_op -[(_ + _)%Qp]assoc Qp_div_2 left_id_L. auto. }
+        rewrite [(qq / 2)%Qp ⋅ _]comm frac_op -[(_ + _)%Qp]assoc Qp.div_2 left_id_L. auto. }
       iModIntro. wp_case. iApply "HΦ". iFrame.
     - wp_apply (wp_cas_int_fail with "Hl"); [congruence|]. iIntros "Hl".
       iMod ("Hclose2" with "Hown") as "HP". iModIntro.
@@ -406,10 +406,10 @@ Section arc.
             apply op_local_update_discrete=>Hv. constructor; last done.
             split; last by rewrite /= left_id; apply Hv. split=>[|//].
             apply frac_valid. rewrite /= -Heq comm_L.
-            by apply Qp_add_le_mono_l, Qp_div_le. }
+            by apply Qp.add_le_mono_l, Qp.div_le. }
           iFrame. iApply "Hclose1". iExists _. iFrame. iExists _. iFrame.
           rewrite /= [xH ⋅ _]comm_L frac_op [(_ + q')%Qp]comm -[(_ + _)%Qp]assoc
-                  Qp_div_2 left_id_L. auto with iFrame.
+                  Qp.div_2 left_id_L. auto with iFrame.
         + iIntros "Hl". iFrame. iApply ("Hclose1" with "[-]"). iExists _. iFrame.
           iExists q. iCombine "HP1 HP1'" as "$". auto with iFrame.
       - iDestruct "H" as "[>$ ?]". iIntros "!>"; iSplit; first by auto with congruence.

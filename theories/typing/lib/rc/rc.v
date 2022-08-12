@@ -162,7 +162,7 @@ Section rc.
         iMod (na_inv_alloc tid _ _ (rc_inv tid ν γ l' ty)
               with "[Ha Hν2 Hl'1 Hl'2 H† HPend]") as "#?".
         { rewrite /rc_inv. iExists (Some $ Cinl (_, _), _). iFrame. iExists _.
-          iFrame "#∗". rewrite Qp_div_2; auto. }
+          iFrame "#∗". rewrite Qp.div_2; auto. }
         iMod (ty_share with "LFT HP Hν1") as "[??]"; first solve_ndisj.
         iExists _, _, _. iFrame. iExists ty. iFrame "#". iSplitR; last by auto.
           by iApply type_incl_refl. }
@@ -174,7 +174,7 @@ Section rc.
       { iExists _, _, _. iFrame "Hpersist".
         iMod (bor_sep with "LFT HX") as "[Hrc Hlft]"; first solve_ndisj.
         iDestruct (frac_bor_lft_incl with "LFT [> Hlft]") as "$".
-        { iApply (bor_fracture with "LFT"); first solve_ndisj. by rewrite Qp_mul_1_r. }
+        { iApply (bor_fracture with "LFT"); first solve_ndisj. by rewrite Qp.mul_1_r. }
         iApply (bor_na with "Hrc"); solve_ndisj. }
       iApply ("Hclose1" with "[]"). by auto.
     - iMod ("Hclose1" with "[]") as "_"; first by auto.
@@ -594,12 +594,12 @@ Section code.
     { apply auth_update_alloc, prod_local_update_1,
       (op_local_update_discrete _ _ (Some (Cinl ((qb/2)%Qp, 1%positive))))=>-[/= Hqa _].
       split; simpl; last done. apply frac_valid. rewrite /= -Hq comm_L.
-      by apply Qp_add_le_mono_l, Qp_div_le. }
+      by apply Qp.add_le_mono_l, Qp.div_le. }
     rewrite right_id -Some_op -Cinl_op -pair_op. iDestruct "Hνtok" as "[Hνtok1 Hνtok2]".
     iMod ("Hclose3" with "[$Hrctok] Hna") as "[Hα1 Hna]".
     iMod ("Hclose2" with "[Hrc● Hl'1 Hl'2 Hl'† Hνtok2 Hν† $Hna]") as "Hna".
     { iExists _. iFrame "Hrc●". iExists _. rewrite Z.add_comm. iFrame.
-      rewrite [_ ⋅ _]comm frac_op -[(_ + _)%Qp]assoc Qp_div_2. auto. }
+      rewrite [_ ⋅ _]comm frac_op -[(_ + _)%Qp]assoc Qp.div_2. auto. }
     iMod ("Hclose1" with "[$Hα1 $Hα2] HL") as "HL".
     (* Finish up the proof. *)
     iApply (type_type _ _ _ [ x ◁ box (&shr{α}(rc ty)); #lr ◁ box (rc ty)]
@@ -1084,7 +1084,7 @@ Section code.
         iSplitR; first by iApply type_incl_refl.
         iMod (ty_share with "LFT Hb Hν1") as "[Hty Hν]"=>//.
         iSplitR "Hty"; last by auto. iApply na_inv_alloc. iExists _. do 2 iFrame.
-        iExists _. iFrame. by rewrite Qp_div_2. }
+        iExists _. iFrame. by rewrite Qp.div_2. }
       iDestruct "Hty" as (ty') "#(Hty'ty & Hinv & Hs & Hν†)".
       iDestruct "Hs" as "[Hs|Hν']"; last by iDestruct (lft_tok_dead with "Hν Hν'") as "[]".
       wp_bind (of_val clone). iApply (wp_wand with "[Hna]").
