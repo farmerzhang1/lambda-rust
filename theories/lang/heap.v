@@ -236,9 +236,9 @@ Section heap.
       iDestruct "Hown1" as "[Hown1 _]". iDestruct "Hown2" as "[Hown2 _]".
       iCombine "Hown1" "Hown2" as "Hown". rewrite heap_mapsto_vec_op; last first.
       { rewrite !firstn_length. subst ll.
-        rewrite -!min_assoc min_idempotent min_comm -min_assoc min_idempotent min_comm. done. }
+        rewrite -!Nat.min_assoc Nat.min_idempotent Nat.min_comm -Nat.min_assoc Nat.min_idempotent Nat.min_comm. done. }
       iDestruct "Hown" as "[H Hown]". iDestruct "H" as %Hl. iExists (take ll vl1). iFrame.
-      destruct (min_spec (length vl1) (length vl2)) as [[Hne Heq]|[Hne Heq]].
+      destruct (Nat.min_spec (length vl1) (length vl2)) as [[Hne Heq]|[Hne Heq]].
       + iClear "HP2". rewrite take_ge; last first.
         { rewrite -Heq /ll. done. }
         rewrite drop_ge; first by rewrite app_nil_r. by rewrite -Heq.

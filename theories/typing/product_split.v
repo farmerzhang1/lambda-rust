@@ -75,7 +75,7 @@ Section product_split.
       by iApply "Heq". }
     iMod ("IH" with "[] HL [Htyl]") as "(HL & Htyl)"; first done.
     { change (ty_size ty) with (0+ty_size ty)%nat at 1.
-      rewrite plus_comm -hasty_ptr_offsets_offset //. }
+      rewrite Nat.add_comm -hasty_ptr_offsets_offset //. }
     iClear "IH". iMod (Hmerge with "LFT HE HL [Hty Htyl]") as "($ & ?)";
                    last by rewrite tctx_interp_singleton.
     rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton. iFrame.

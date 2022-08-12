@@ -84,7 +84,7 @@ Section uninit.
     subtype E L (uninit n) (Π(ty :: tyl)).
   Proof.
     intros ?%Nat2Z.inj_le. rewrite -!uninit_uninit0_eqtype /uninit0=>Hty Htyl.
-    rewrite (le_plus_minus ty.(ty_size) n) // replicate_add
+    rewrite -(Nat.sub_add ty.(ty_size) n) // Nat.add_comm // replicate_add
            -(prod_flatten_r _ _ [_]) /= -prod_app. repeat (done || f_equiv).
   Qed.
   Lemma uninit_product_subtype_cons_l {E L} (n : nat) ty tyl :
@@ -94,7 +94,7 @@ Section uninit.
     subtype E L (Π(ty :: tyl)) (uninit n).
   Proof.
     intros ?%Nat2Z.inj_le. rewrite -!uninit_uninit0_eqtype /uninit0=>Hty Htyl.
-    rewrite (le_plus_minus ty.(ty_size) n) // replicate_add
+    rewrite -(Nat.sub_add ty.(ty_size) n) // Nat.add_comm replicate_add
            -(prod_flatten_r _ _ [_]) /= -prod_app. repeat (done || f_equiv).
   Qed.
   Lemma uninit_product_eqtype_cons_r {E L} (n : nat) ty tyl :

@@ -773,13 +773,13 @@ Section arc.
       iApply wp_mask_mono; last iApply (wp_step_fupd with "H†"); [solve_ndisj..|].
       iDestruct "Hown" as (???) "(_ & Hlen & _)". wp_write. iIntros "(#Hν & Hown & H†)!>".
       wp_seq. wp_op. wp_op. iDestruct "Hown" as (?) "[H↦ Hown]".
-      iDestruct (ty_size_eq with "Hown") as %?. rewrite Max.max_0_r.
+      iDestruct (ty_size_eq with "Hown") as %?. rewrite Nat.max_0_r.
       iDestruct "Hlen" as %[= ?]. wp_apply (wp_memcpy with "[$H↦1 $H↦]"); [congruence..|].
       iIntros "[? Hrc']". wp_seq. iMod ("Hdrop" with "[Hrc' H†]") as "Htok".
       { unfold P2. auto with iFrame. }
       wp_apply (drop_weak_spec with "[//] Htok"). unlock. iIntros ([]); last first.
       { iIntros "_". wp_if. unlock. iFrame. iExists (_::_). rewrite heap_mapsto_vec_cons.
-        iFrame. iExists 1%nat, _, []. rewrite /= right_id_L Max.max_0_r.
+        iFrame. iExists 1%nat, _, []. rewrite /= right_id_L Nat.max_0_r.
         auto 10 with iFrame. }
       iIntros "([H† H1] & H2 & H3)". iDestruct "H1" as (vl1) "[H1 Heq]".
       iDestruct "Heq" as %<-. wp_if.
