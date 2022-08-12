@@ -61,7 +61,7 @@ Section fixpoint.
       { split; (intros [H1 H2]; split; [apply H1|apply H2]). }
       apply limit_preserving_and; repeat (apply limit_preserving_forall=> ?).
       + apply bi.limit_preserving_Persistent; solve_proper.
-      + apply limit_preserving_impl, bi.limit_preserving_entails;
+      + apply limit_preserving_impl', bi.limit_preserving_entails;
         solve_proper_core ltac:(fun _ => eapply ty_size_ne || f_equiv).
   Qed.
 
