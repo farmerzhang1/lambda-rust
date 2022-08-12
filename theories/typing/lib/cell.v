@@ -194,7 +194,7 @@ Section typing.
       iIntros (α ϝ ret arg). inv_vec arg=>c x. simpl_subst.
     iApply type_deref; [solve_typing..|].
     iIntros (c'); simpl_subst.
-    iApply type_new; [solve_typing..|]; iIntros (r); simpl_subst.
+    iApply (type_new (ty_size ty)); [solve_typing..|]; iIntros (r); simpl_subst.
     (* Drop to Iris level. *)
     iIntros (tid qmax) "#LFT #HE Htl HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
@@ -209,7 +209,7 @@ Section typing.
     iDestruct (ty_size_eq with "Hrown") as ">Heq". iDestruct "Heq" as %Heq.
     (* FIXME: Changing the order of $Hr↦ $Hc'↦ breaks applying...?? *)
     wp_apply (wp_memcpy with "[$Hr↦ $Hc'↦]").
-    { rewrite Heq /= ?Nat2Z.id //. }
+    { rewrite Heq //. }
     { f_equal. done. }
     iIntros "[Hr↦ Hc'↦]". wp_seq.
     iDestruct "Hx" as "[Hx↦ Hx†]". iDestruct "Hx↦" as (vx) "[Hx↦ Hxown]".
@@ -225,7 +225,7 @@ Section typing.
     { rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
       iFrame "Hc". rewrite !tctx_hasty_val' //. iSplitL "Hx↦ Hx†".
       - iFrame. iExists _. iFrame. iNext. iApply uninit_own. done.
-      - try rewrite !Nat2Z.id. iFrame. iExists _. iFrame. }
+      - iFrame. iExists _. iFrame. }
     iApply type_delete; [solve_typing..|].
     iApply type_delete; [solve_typing..|].
     iApply type_jump; solve_typing.
