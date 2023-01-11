@@ -59,7 +59,7 @@ Section type_context.
     eval_path p = Some v → Closed [] p.
   Proof.
     intros Hpv. revert v Hpv.
-    induction p as [| | |[] p IH [|[]| | | | | | | | | |] _| | | | | | | |]=>//.
+    induction p as [| | |[] p IH [|[]| | | | | | | | | | |] _| | | | | | | | |]=>//.
     - unfold eval_path=>? /of_to_val <-. apply is_closed_of_val.
     - simpl. destruct (eval_path p) as [[[]|]|]; intros ? [= <-].
       specialize (IH _ eq_refl). apply _.
