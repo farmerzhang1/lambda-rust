@@ -396,7 +396,8 @@ Proof.
   - subst. by rewrite to_of_val in H1.
   - subst. by rewrite to_of_val in H2.
   - destruct (IHvl1 vl2); auto. split; last auto. destruct a, p.
-  f_equal; last auto. simpl in H3; subst. simpl in H4. Search ((_, _) = (_, _)). apply pair_equal_spec; split; [auto | by apply (inj of_val)].
+  f_equal; last auto. simpl in H3; subst. simpl in H4.
+  apply pair_equal_spec; split; [auto | by apply (inj of_val)].
 Qed.
 
 Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
@@ -498,6 +499,7 @@ Proof.
   - rewrite !andb_True. intros [He Hel] HXY. split; first by eauto.
     rename select (list expr) into el.
     induction el=>/=; naive_solver.
+  - intros Hxs Hxy. induction xs=>/=; naive_solver.
 Qed.
 
 Lemma is_closed_weaken_nil X e : is_closed [] e → is_closed X e.
@@ -545,7 +547,7 @@ Proof.
     rename select (list expr) into el. induction el; naive_solver.
   - split; first naive_solver.
     rename select (list expr) into el. induction el; naive_solver.
-  - admit.
+  - induction xs; naive_solver.
 Qed.
 
 Lemma subst'_is_closed X b es e :
