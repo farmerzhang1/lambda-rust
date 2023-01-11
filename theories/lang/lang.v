@@ -41,7 +41,8 @@ Inductive expr :=
 | Alloc (e : expr)
 | Free (e1 e2 : expr)
 | Case (e : expr) (el : list expr)
-| Fork (e : expr).
+| Fork (e : expr)
+| Record (xs : list (string * expr)). (* first step for `objects`, add records *)
 
 Global Arguments App _%E _%E.
 Global Arguments Case _%E _%E.
@@ -56,6 +57,7 @@ Fixpoint is_closed (X : list string) (e : expr) : bool :=
   | App e el | Case e el => is_closed X e && forallb (is_closed X) el
   | Read _ e | Alloc e | Fork e => is_closed X e
   | CAS e0 e1 e2 => is_closed X e0 && is_closed X e1 && is_closed X e2
+  | Record xs => forallb (λ pair, (is_closed X pair.2)) xs
   end.
 
 Class Closed (X : list string) (e : expr) := closed : is_closed X e.
@@ -64,7 +66,7 @@ Proof. rewrite /Closed. apply _. Qed.
 Global Instance closed_decision env e : Decision (Closed env e).
 Proof. rewrite /Closed. apply _. Qed.
 
-Inductive val :=
+Inductive val := (* TODO: add VRecord? *)
 | LitV (l : base_lit)
 | RecV (f : binder) (xl : list binder) (e : expr) `{!Closed (f :b: xl +b+ []) e}.
 
@@ -104,7 +106,9 @@ Inductive ectx_item :=
 | AllocCtx
 | FreeLCtx (e2 : expr)
 | FreeRCtx (v1 : val)
-| CaseCtx (el : list expr).
+| CaseCtx (el : list expr)
+(* evaluating a certain field, need field name *)
+| RecordCtx (vl : list (string * val)) (field_name : string) (el : list (string * expr)).
 
 Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   match Ki with
@@ -122,6 +126,7 @@ Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   | FreeLCtx e2 => Free e e2
   | FreeRCtx v1 => Free (of_val v1) e
   | CaseCtx el => Case e el
+  | RecordCtx vl field el => Record (map (λ pair, (pair.1, of_val (pair.2))) vl ++ (field, e) :: el)
   end.
 
 (** Substitution *)
@@ -140,6 +145,7 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   | Free e1 e2 => Free (subst x es e1) (subst x es e2)
   | Case e el => Case (subst x es e) (map (subst x es) el)
   | Fork e => Fork (subst x es e)
+  | Record xs => Record (map (λ pair, (pair.1, subst x es pair.2)) xs)
   end.
 
 Definition subst' (mx : binder) (es : expr) : expr → expr :=
@@ -378,17 +384,33 @@ Proof.
   - destruct (IHvl1 vl2); auto. split; f_equal; auto. by apply (inj of_val).
 Qed.
 
+Lemma list_expr_val_eq_inv_with_str vl1 vl2 f1 f2 e1 e2 el1 el2 :
+to_val e1 = None → to_val e2 = None →
+map (λ pair0 : string * val, (pair0.1, of_val pair0.2)) vl1 ++ (f1, e1) :: el1 =
+     map (λ pair0 : string * val, (pair0.1, of_val pair0.2)) vl2 ++ (f2, e2) ::
+     el2 → vl1 = vl2 ∧ f1 = f2 ∧ el1 = el2.
+Proof.
+  revert vl2; induction vl1 as [|? vl1 IHvl1];
+  intros vl2; destruct vl2 as [|? vl2]; intros H1 H2; inversion 1.
+  - done.
+  - subst. by rewrite to_of_val in H1.
+  - subst. by rewrite to_of_val in H2.
+  - destruct (IHvl1 vl2); auto. split; last auto. destruct a, p.
+  f_equal; last auto. simpl in H3; subst. simpl in H4. Search ((_, _) = (_, _)). apply pair_equal_spec; split; [auto | by apply (inj of_val)].
+Qed.
+
 Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
   to_val e1 = None → to_val e2 = None →
   fill_item Ki1 e1 = fill_item Ki2 e2 → Ki1 = Ki2.
 Proof.
-  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | |],
-           Ki2 as [| | |v2 vl2 el2| | | | | | | | | |];
+  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | | |],
+           Ki2 as [| | |v2 vl2 el2| | | | | | | | | | |];
   intros He1 He2 EQ; try discriminate; simplify_eq/=;
     repeat match goal with
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
     end; auto.
-  destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
+  - destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
+  - destruct (list_expr_val_eq_inv_with_str vl vl0 field_name field_name0 e1 e2 el el0) as (H1 & H2 & H3); auto. congruence.
 Qed.
 
 Lemma shift_loc_assoc l n n' : l +ₗ n +ₗ n' = l +ₗ (n + n').
@@ -494,6 +516,9 @@ Proof.
     rename select (list expr) into el.
     induction el=>//=. rewrite andb_True=>?.
     f_equal; intuition eauto with set_solver.
+  - induction xs; first done. rewrite map_cons. f_equal.
+  + apply injective_projections; simpl; auto. simpl in He. apply FIX with X; set_solver.
+  + apply IHxs. set_solver.
 Qed.
 
 Lemma is_closed_nil_subst e x es : is_closed [] e → subst x es e = e.
@@ -520,6 +545,7 @@ Proof.
     rename select (list expr) into el. induction el; naive_solver.
   - split; first naive_solver.
     rename select (list expr) into el. induction el; naive_solver.
+  - admit.
 Qed.
 
 Lemma subst'_is_closed X b es e :
@@ -581,8 +607,8 @@ Fixpoint expr_beq (e : expr) (e' : expr) : bool :=
 Lemma expr_beq_correct (e1 e2 : expr) : expr_beq e1 e2 ↔ e1 = e2.
 Proof.
   revert e1 e2; fix FIX 1. intros e1 e2.
-    destruct e1 as [| | | |? el1| | | | | |? el1|],
-             e2 as [| | | |? el2| | | | | |? el2|]; simpl; try done;
+    destruct e1 as [| | | |? el1| | | | | |? el1| |],
+             e2 as [| | | |? el2| | | | | |? el2| |]; simpl; try done;
   rewrite ?andb_True ?bool_decide_spec ?FIX;
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
@@ -593,7 +619,9 @@ Proof.
     { revert el2. induction el1 as [|el1h el1q]; intros el2; destruct el2; try done.
       specialize (FIX el1h). naive_solver. }
     clear FIX. naive_solver.
-Qed.
+  - admit.
+Admitted.
+(* Qed. *)
 Global Instance expr_dec_eq : EqDecision expr.
 Proof.
  refine (λ e1 e2, cast_if (decide (expr_beq e1 e2))); by rewrite -expr_beq_correct.
