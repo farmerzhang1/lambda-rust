@@ -60,7 +60,7 @@ Section product.
     iDestruct "H1" as %->. iDestruct "H2" as %->. done.
   Qed.
   Next Obligation.
-    intros ty1 ty2 E κ l tid q ?. iIntros "#LFT /=H Htok". rewrite split_prod_mt.
+    intros ty1 ty2 E κ l tid q ?. iIntros "#LFT /= H Htok". rewrite split_prod_mt.
     iMod (bor_sep with "LFT H") as "[H1 H2]"; first solve_ndisj.
     iMod (ty1.(ty_share) with "LFT H1 Htok") as "[? Htok]"; first solve_ndisj.
     iMod (ty2.(ty_share) with "LFT H2 Htok") as "[? Htok]"; first solve_ndisj.
@@ -71,7 +71,44 @@ Section product.
     iSplitL "H1"; by iApply (ty_shr_mono with "H⊑").
   Qed.
 
-  Global Instance product2_type_ne n:
+  (* this is folder function for records, ty1 should be unit type or a record already *)
+  Program Definition record2 (p : (string * type)) (ty1 : type) : type :=
+    let (_, ty2) := p in
+    {| ty_size := ty1.(ty_size) + ty2.(ty_size);
+       ty_own tid vl := (∃ vl1 vl2,
+         ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I;
+       ty_shr κ tid l :=
+         (ty1.(ty_shr) κ tid l ∗
+          ty2.(ty_shr) κ tid (l +ₗ ty1.(ty_size)))%I
+    |}.
+  Next Obligation.
+    iIntros (_ ty1 _ ty2 ??) "H".
+    iDestruct "H" as (vl1 vl2 ->) "[H1 H2]".
+    rewrite app_length. (* without this rewrite, we can't destruct the next equations with -> *)
+    iDestruct (ty_size_eq with "H1") as %->.
+    iDestruct (ty_size_eq with "H2") as %->.
+    done.
+  Qed.
+  Next Obligation.
+    iIntros (_ ty1 _ ty2 E κ l tid q H) "#Hctx H /= Htok".
+    rewrite split_prod_mt.
+    (* from full borrow we can create a shared reference *)
+    (* but first we need to split the full borrow *)
+    iMod (bor_sep with "Hctx H") as "(H1 & H2)"; first done.
+    (* now we get the sharing predicate from H1 and H2, using ty-share *)
+    iMod (ty1.(ty_share) with "Hctx H1 Htok") as "[H1 Htok]"; first apply H.
+    iMod (ty2.(ty_share) with "Hctx H2 Htok") as "[H2 Htok]"; first apply H.
+    iModIntro. iFrame.
+  Qed.
+  Next Obligation.
+    iIntros (_ ty1 _ ty2 ?? ??) "#H⊑ [H1 H2]".
+    (* need to shorten lifetime, respectively *)
+    iSplit.
+    - by iApply (ty1.(ty_shr_mono) with "H⊑").
+    - by iApply (ty2.(ty_shr_mono) with "H⊑").
+  Qed.
+
+    Global Instance product2_type_ne n:
     Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) product2.
   Proof. solve_type_proper. Qed.
 
@@ -152,6 +189,10 @@ Section product.
   Qed.
 
   Definition product := foldr product2 unit0.
+  (* oh hello, can we hide record2 here it's not really a record *)
+  Definition record := foldr record2 unit0.
+  (* we need to proof that the field names are distinct? *)
+  Definition record_example := record [("x", unit0) ; ("y", unit0); ("z", unit0)].
   Definition unit := product [].
 
   Global Instance product_wf tyl `{!ListTyWf tyl} : TyWf (product tyl) :=
