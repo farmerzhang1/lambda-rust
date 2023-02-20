@@ -42,7 +42,8 @@ Inductive expr :=
 | Free (e1 e2 : expr)
 | Case (e : expr) (el : list expr)
 | Fork (e : expr)
-| Record (xs : list (string * expr)). (* first step for `objects`, add records *)
+| RecordNil
+| RecordCons (l : string) (e1 e2 : expr).
 
 Global Arguments App _%E _%E.
 Global Arguments Case _%E _%E.
@@ -57,7 +58,8 @@ Fixpoint is_closed (X : list string) (e : expr) : bool :=
   | App e el | Case e el => is_closed X e && forallb (is_closed X) el
   | Read _ e | Alloc e | Fork e => is_closed X e
   | CAS e0 e1 e2 => is_closed X e0 && is_closed X e1 && is_closed X e2
-  | Record xs => forallb (λ pair, (is_closed X pair.2)) xs
+  | RecordNil => true
+  | RecordCons l e1 e2 => is_closed X e1 && is_closed X e2
   end.
 
 Class Closed (X : list string) (e : expr) := closed : is_closed X e.
@@ -66,23 +68,35 @@ Proof. rewrite /Closed. apply _. Qed.
 Global Instance closed_decision env e : Decision (Closed env e).
 Proof. rewrite /Closed. apply _. Qed.
 
-Inductive val := (* TODO: add VRecord? *)
+Inductive val :=
 | LitV (l : base_lit)
-| RecV (f : binder) (xl : list binder) (e : expr) `{!Closed (f :b: xl +b+ []) e}.
+| RecV (f : binder) (xl : list binder) (e : expr) `{!Closed (f :b: xl +b+ []) e}
+| RecordVNil
+| RecordVCons (l : string) (v1 v2 : val).
 
 Bind Scope val_scope with val.
 
-Definition of_val (v : val) : expr :=
+Fixpoint of_val (v : val) : expr :=
   match v with
   | RecV f x e => Rec f x e
   | LitV l => Lit l
+  | RecordVNil => RecordNil
+  | RecordVCons l v1 v2 => RecordCons l (of_val v1) (of_val v2)
   end.
 
-Definition to_val (e : expr) : option val :=
+Fixpoint to_val (e : expr) : option val :=
   match e with
   | Rec f xl e =>
     if decide (Closed (f :b: xl +b+ []) e) then Some (RecV f xl e) else None
   | Lit l => Some (LitV l)
+  (* maybe see https://github.com/pvanderbilt/coq-lang-playarea/blob/master/LDef.v for its helper lemmas?
+  | Record es => option_map RecordV (to_list_val es) 
+    we use the SF approach at last *)
+  | RecordNil => Some RecordVNil
+  | RecordCons l e1 e2 => match (to_val e1, to_val e2) with
+      | (Some v1, Some v2) => Some (RecordVCons l v1 v2)
+      | _ => None
+      end
   | _ => None
   end.
 
@@ -108,7 +122,8 @@ Inductive ectx_item :=
 | FreeRCtx (v1 : val)
 | CaseCtx (el : list expr)
 (* evaluating a certain field, need field name *)
-| RecordCtx (vl : list (string * val)) (field_name : string) (el : list (string * expr)).
+| RecordConsLCtx (l : string) (e : expr)
+| RecordConsRCtx (l : string) (e : val).
 
 Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   match Ki with
@@ -126,7 +141,8 @@ Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   | FreeLCtx e2 => Free e e2
   | FreeRCtx v1 => Free (of_val v1) e
   | CaseCtx el => Case e el
-  | RecordCtx vl field el => Record (map (λ pair, (pair.1, of_val (pair.2))) vl ++ (field, e) :: el)
+  | RecordConsLCtx l e2 => RecordCons l e e2
+  | RecordConsRCtx l e1 => RecordCons l (of_val e1) e
   end.
 
 (** Substitution *)
@@ -145,7 +161,8 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   | Free e1 e2 => Free (subst x es e1) (subst x es e2)
   | Case e el => Case (subst x es e) (map (subst x es) el)
   | Fork e => Fork (subst x es e)
-  | Record xs => Record (map (λ pair, (pair.1, subst x es pair.2)) xs)
+  | RecordNil => RecordNil
+  | RecordCons l e1 e2 => RecordCons l (subst x es e1) (subst x es e2)
   end.
 
 Definition subst' (mx : binder) (es : expr) : expr → expr :=
@@ -238,6 +255,7 @@ Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_l
 
 Definition stuck_term := App (Lit $ LitInt 0) [].
 
+(* TODO: add record reduction steps *)
 Inductive head_step : expr → state → list Empty_set → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
     bin_op_eval σ op l1 l2 l' →
@@ -348,6 +366,13 @@ Qed.
 Lemma of_to_val e v : to_val e = Some v → of_val v = e.
 Proof.
   revert v; induction e; intros v ?; simplify_option_eq; auto with f_equal.
+  (* The H here, we should be able to deduce that e1 and e2 can't be None, but how? *)
+  destruct (to_val e1) eqn:?; try done.
+  destruct (to_val e2) eqn:?; try done.
+  inversion H. simpl.
+  f_equal.
+  - by apply IHe1.
+  - by apply IHe2.
 Qed.
 
 Global Instance of_val_inj : Inj (=) (=) of_val.
@@ -358,7 +383,10 @@ Proof. destruct Ki; intros ???; simplify_eq/=; auto with f_equal. Qed.
 
 Lemma fill_item_val Ki e :
   is_Some (to_val (fill_item Ki e)) → is_Some (to_val e).
-Proof. intros [v ?]. destruct Ki; simplify_option_eq; eauto. Qed.
+Proof. intros [v ?]. destruct Ki; simplify_option_eq; eauto.
+  - destruct (to_val e) eqn:?; done.
+  - rewrite to_of_val in H. destruct (to_val e) eqn:?; done.
+Qed.
 
 Lemma val_stuck e1 σ1 κ e2 σ2 ef :
   head_step e1 σ1 κ e2 σ2 ef → to_val e1 = None.
@@ -404,14 +432,13 @@ Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
   to_val e1 = None → to_val e2 = None →
   fill_item Ki1 e1 = fill_item Ki2 e2 → Ki1 = Ki2.
 Proof.
-  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | | |],
-           Ki2 as [| | |v2 vl2 el2| | | | | | | | | | |];
+  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | | | |],
+           Ki2 as [| | |v2 vl2 el2| | | | | | | | | | | |];
   intros He1 He2 EQ; try discriminate; simplify_eq/=;
     repeat match goal with
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
     end; auto.
-  - destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
-  - destruct (list_expr_val_eq_inv_with_str vl vl0 field_name field_name0 e1 e2 el el0) as (H1 & H2 & H3); auto. congruence.
+  destruct (list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2); auto. congruence.
 Qed.
 
 Lemma shift_loc_assoc l n n' : l +ₗ n +ₗ n' = l +ₗ (n + n').
@@ -499,7 +526,6 @@ Proof.
   - rewrite !andb_True. intros [He Hel] HXY. split; first by eauto.
     rename select (list expr) into el.
     induction el=>/=; naive_solver.
-  - intros Hxs Hxy. induction xs=>/=; naive_solver.
 Qed.
 
 Lemma is_closed_weaken_nil X e : is_closed [] e → is_closed X e.
@@ -518,16 +544,14 @@ Proof.
     rename select (list expr) into el.
     induction el=>//=. rewrite andb_True=>?.
     f_equal; intuition eauto with set_solver.
-  - induction xs; first done. rewrite map_cons. f_equal.
-  + apply injective_projections; simpl; auto. simpl in He. apply FIX with X; set_solver.
-  + apply IHxs. set_solver.
 Qed.
 
 Lemma is_closed_nil_subst e x es : is_closed [] e → subst x es e = e.
 Proof. intros. apply is_closed_subst with []; set_solver. Qed.
 
 Lemma is_closed_of_val X v : is_closed X (of_val v).
-Proof. apply is_closed_weaken_nil. induction v; simpl; auto. Qed.
+Proof. apply is_closed_weaken_nil. induction v; simpl; auto.
+Qed.
 
 Lemma is_closed_to_val X e v : to_val e = Some v → is_closed X e.
 Proof. intros <-%of_to_val. apply is_closed_of_val. Qed.
@@ -547,7 +571,6 @@ Proof.
     rename select (list expr) into el. induction el; naive_solver.
   - split; first naive_solver.
     rename select (list expr) into el. induction el; naive_solver.
-  - induction xs; naive_solver.
 Qed.
 
 Lemma subst'_is_closed X b es e :
@@ -604,13 +627,16 @@ Fixpoint expr_beq (e : expr) (e' : expr) : bool :=
     expr_beq e0 e0' && expr_beq e1 e1' && expr_beq e2 e2'
   | Alloc e, Alloc e' | Fork e, Fork e' => expr_beq e e'
   | Free e1 e2, Free e1' e2' => expr_beq e1 e1' && expr_beq e2 e2'
+  | RecordNil, RecordNil => true
+  | RecordCons l e1 e2, RecordCons l' e1' e2' =>
+    bool_decide (l = l') && expr_beq e1 e1' && expr_beq e2 e2'
   | _, _ => false
   end.
 Lemma expr_beq_correct (e1 e2 : expr) : expr_beq e1 e2 ↔ e1 = e2.
 Proof.
   revert e1 e2; fix FIX 1. intros e1 e2.
-    destruct e1 as [| | | |? el1| | | | | |? el1| |],
-             e2 as [| | | |? el2| | | | | |? el2| |]; simpl; try done;
+    destruct e1 as [| | | |? el1| | | | | |? el1| | |],
+             e2 as [| | | |? el2| | | | | |? el2| | |]; simpl; try done;
   rewrite ?andb_True ?bool_decide_spec ?FIX;
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
@@ -621,9 +647,8 @@ Proof.
     { revert el2. induction el1 as [|el1h el1q]; intros el2; destruct el2; try done.
       specialize (FIX el1h). naive_solver. }
     clear FIX. naive_solver.
-  - admit.
-Admitted.
-(* Qed. *)
+Qed.
+
 Global Instance expr_dec_eq : EqDecision expr.
 Proof.
  refine (λ e1 e2, cast_if (decide (expr_beq e1 e2))); by rewrite -expr_beq_correct.

@@ -21,7 +21,9 @@ Inductive expr :=
 | Alloc (e : expr)
 | Free (e1 e2 : expr)
 | Case (e : expr) (el : list expr)
-| Fork (e : expr).
+| Fork (e : expr)
+| RecordNil
+| RecordCons (l : string) (e1 e2 : expr).
 
 Fixpoint to_expr (e : expr) : lang.expr :=
   match e with
@@ -39,6 +41,8 @@ Fixpoint to_expr (e : expr) : lang.expr :=
   | Free e1 e2 => lang.Free (to_expr e1) (to_expr e2)
   | Case e el => lang.Case (to_expr e) (map to_expr el)
   | Fork e => lang.Fork (to_expr e)
+  | RecordNil => lang.RecordNil
+  | RecordCons l e1 e2 => lang.RecordCons l (to_expr e1) (to_expr e2)
   end.
 
 Ltac of_expr e :=
@@ -62,6 +66,10 @@ Ltac of_expr e :=
   | lang.Case ?e ?el =>
      let e := of_expr e in let el := of_expr el in constr:(Case e el)
   | lang.Fork ?e => let e := of_expr e in constr:(Fork e)
+  | lang.RecordNil => constr:(RecordNil)
+  | lang.RecordCons ?l ?e1 ?e2 =>
+    let e1 := of_expr e1 in let e2 := of_expr e2 in
+      constr:(RecordCons l e1 e2)
   | @nil lang.expr => constr:(@nil expr)
   | @cons lang.expr ?e ?el =>
     let e := of_expr e in let el := of_expr el in constr:(e::el)
@@ -84,6 +92,8 @@ Fixpoint is_closed (X : list string) (e : expr) : bool :=
   | App e el | Case e el => is_closed X e && forallb (is_closed X) el
   | Read _ e | Alloc e | Fork e => is_closed X e
   | CAS e0 e1 e2 => is_closed X e0 && is_closed X e1 && is_closed X e2
+  | RecordNil => true
+  | RecordCons l e1 e2 => is_closed X e1 && is_closed X e2
   end.
 Lemma is_closed_correct X e : is_closed X e → lang.is_closed X (to_expr e).
 Proof.
@@ -97,19 +107,30 @@ Qed.
 constructors are only generated for closed expressions of which we know nothing
 about apart from being closed. Notice that the reverse implication of
 [to_val_Some] thus does not hold. *)
-Definition to_val (e : expr) : option val :=
+Fixpoint to_val (e : expr) : option val :=
   match e with
   | Val v _ _ => Some v
   | Rec f xl e =>
     if decide (is_closed (f :b: xl +b+ []) e) is left H
     then Some (@RecV f xl (to_expr e) (is_closed_correct _ _ H)) else None
   | Lit l => Some (LitV l)
+  | RecordNil => Some (RecordVNil)
+  | RecordCons l e1 e2 => match (to_val e1, to_val e2) with
+    | (Some v1, Some v2) => Some (RecordVCons l v1 v2)
+    | _ => None
+    end
   | _ => None
   end.
 Lemma to_val_Some e v :
   to_val e = Some v → of_val v = W.to_expr e.
 Proof.
   revert v. induction e; intros; simplify_option_eq; auto using of_to_val.
+  case_match; last discriminate.
+  case_match; last discriminate.
+  inversion H; simpl.
+  f_equal.
+  - by apply IHe1.
+  - by apply IHe2.
 Qed.
 Lemma to_val_is_Some e :
   is_Some (to_val e) → ∃ v, of_val v = to_expr e.
@@ -135,6 +156,8 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   | Free e1 e2 => Free (subst x es e1) (subst x es e2)
   | Case e el => Case (subst x es e) (map (subst x es) el)
   | Fork e => Fork (subst x es e)
+  | RecordNil => RecordNil
+  | RecordCons l e1 e2 => RecordCons l (subst x es e1) (subst x es e2)
   end.
 Lemma to_expr_subst x er e :
   to_expr (subst x er e) = lang.subst x (to_expr er) (to_expr e).
