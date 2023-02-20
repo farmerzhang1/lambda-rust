@@ -258,7 +258,7 @@ Section typing.
     iApply type_delete; [solve_typing..|].
     iIntros (tid qmax) "#LFT #HE Hna HL Hk (#Hi' & #Hv' & Hr & _)".
     rewrite !tctx_hasty_val. clear.
-    destruct i' as [[| |i']|]; try done. iClear "Hi'".
+    destruct i' as [[| |i']| | |]; try done. iClear "Hi'".
     wp_op.
     rewrite bool_decide_decide.
     destruct (decide (0 ≤ i')) as [Hpos|Hneg]; last first.

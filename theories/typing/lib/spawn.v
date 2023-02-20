@@ -20,7 +20,7 @@ Section join_handle.
          | _ => False
          end%I;
        ty_shr κ _ l := True%I |}.
-  Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
+  Next Obligation. by iIntros (ty tid [|[[]| | |][]]) "H". Qed.
   Next Obligation. iIntros "* _ _ _ $". auto. Qed.
   Next Obligation. iIntros (?) "**"; auto. Qed.
 
@@ -31,7 +31,7 @@ Section join_handle.
     ▷ type_incl ty1 ty2 -∗ type_incl (join_handle ty1) (join_handle ty2).
   Proof.
     iIntros "#Hincl". iSplit; first done. iSplit; iModIntro.
-    - iIntros "%tid %vl Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
+    - iIntros "%tid %vl Hvl". destruct vl as [|[[|vl|] | | |] [|]]; try done.
       simpl. iApply (join_handle_impl with "[] Hvl"). clear tid.
       iIntros "!> * Hown" (tid).
       iDestruct (box_type_incl with "Hincl") as "{Hincl} (_ & Hincl & _)".
@@ -123,7 +123,7 @@ Section spawn.
                              (λ r, [r ◁ box retty])); try solve_typing; [|].
     { iIntros (tid qmax) "#LFT _ $ $".
       rewrite tctx_interp_singleton tctx_hasty_val. iIntros "Hc".
-      destruct c' as [[|c'|]|]; try done.
+      destruct c' as [[|c'|]| | |]; try done.
       iApply (join_spec with "Hc"). iNext. iIntros "* Hret".
       rewrite tctx_interp_singleton tctx_hasty_val. done. }
     iIntros (r); simpl_subst. iApply type_delete; [solve_typing..|].

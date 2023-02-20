@@ -36,14 +36,14 @@ Section refmut.
            □ ∀ F q, ⌜↑shrN ∪ ↑lftN ⊆ F⌝ -∗ q.[α ⊓ κ]
              ={F}[F∖↑shrN]▷=∗ ty.(ty_shr) (α ⊓ κ) tid lv ∗ q.[α ⊓ κ] |}%I.
   Next Obligation.
-    iIntros (???[|[[]|][|[[]|][]]]); try iIntros "[]". by iIntros "_".
+    iIntros (???[|[[]| | |][|[[]| | |][]]]); try iIntros "[]". by iIntros "_".
   Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q HE) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
-    destruct vl as [|[[|lv|]|][|[[|lrc|]|][]]];
+    destruct vl as [|[[|lv|]| | |][|[[|lrc|]| | |][]]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (ν) "Hb"; first done.
     iMod (bor_exists with "LFT Hb") as (q') "Hb"; first done.
@@ -90,7 +90,7 @@ Section refmut.
     iIntros "!> #HE". iDestruct ("Hα" with "HE") as %Hα1α2.
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iModIntro].
     - done.
-    - iIntros (tid [|[[]|][|[[]|][]]]) "H"=>//=.
+    - iIntros (tid [|[[]| | |][|[[]| | |][]]]) "H"=>//=.
       iDestruct "H" as (ν γ q' β ty') "(Hb & #H⊑ & #Hinv & Hν & Hown)".
       iExists ν, γ, q', β, ty'. iFrame "∗#". iSplit.
       + iApply bor_shorten; last iApply bor_iff; last done.

@@ -114,12 +114,12 @@ Section refcell.
        ty_shr κ tid l :=
          (∃ α γ, κ ⊑ α ∗ &na{α, tid, refcell_invN}(refcell_inv tid l γ α ty))%I |}.
   Next Obligation.
-    iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq /=. by iIntros (->).
+    iIntros (??[|[[]| | |]]); try iIntros "[]". rewrite ty_size_eq /=. by iIntros (->).
   Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_acc_cons with "LFT Hb Htok") as "[H Hclose]"; first done.
-    iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
+    iDestruct "H" as ([|[[| |n]| | |]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     iDestruct "H" as "Hown".
     iMod ("Hclose" $! ((∃ n:Z, l ↦ #n) ∗
             (l +ₗ 1) ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
@@ -192,7 +192,7 @@ Section refcell.
     iIntros "!> #HE". iDestruct ("EQ'" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; last iSplit.
     - iPureIntro. simpl. congruence.
-    - iIntros "!> %tid %vl H". destruct vl as [|[[]|]]=>//=. by iApply "Hown".
+    - iIntros "!> %tid %vl H". destruct vl as [|[[]| | |]]=>//=. by iApply "Hown".
     - iIntros "!> %α %tid %l H". simpl.
       iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
       iApply na_bor_iff; last done. iNext; iModIntro; iSplit; iIntros "H".
@@ -210,7 +210,7 @@ Section refcell.
 
   Global Instance refcell_send ty :
     Send ty → Send (refcell ty).
-  Proof. move=>???[|[[]|]]//=. Qed.
+  Proof. move=>???[|[[]| | |]]//=. Qed.
 End refcell.
 
 Global Hint Resolve refcell_mono' refcell_proper' : lrust_typing.

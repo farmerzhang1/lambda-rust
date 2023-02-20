@@ -18,10 +18,10 @@ Section fake_shared.
     rewrite tctx_interp_singleton tctx_hasty_val.
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "%"; [solve_typing..|].
     iAssert (▷ ty_own (own_ptr 1 (&shr{α}(box ty))) tid [x])%I with "[HT]" as "HT".
-    { destruct x as [[|l|]|]=>//=. iDestruct "HT" as "[H $]".
-      iNext. iDestruct "H" as ([|[[]|][]]) "[H↦ H]"; try done.
+    { destruct x as [[|l|]| | |]=>//=. iDestruct "HT" as "[H $]".
+      iNext. iDestruct "H" as ([|[[]| | |][]]) "[H↦ H]"; try done.
       iExists _. iFrame. iDestruct "H" as (vl) "[#Hf H]".
-      iNext. destruct vl as [|[[|l'|]|][]]; try done. iExists l'. iSplit.
+      iNext. destruct vl as [|[[|l'|] | | |][]]; try done. iExists l'. iSplit.
       { iApply frac_bor_iff; last done. iIntros "!>!> *".
         rewrite heap_mapsto_vec_singleton. iSplit; auto. }
       iDestruct "H" as "#H". iIntros "!> * % $". iApply step_fupd_intro; first set_solver.
@@ -49,10 +49,10 @@ Section fake_shared.
     iDestruct (lctx_lft_incl_incl α β with "HL HE") as "%"; [solve_typing..|].
     (* FIXME: WTF, using &uniq{β} here does not work. *)
     iAssert (▷ ty_own (own_ptr 1 (&shr{α} (uniq_bor β ty))) tid [x])%I with "[HT]" as "HT".
-    { destruct x as [[|l|]|]=>//=. iDestruct "HT" as "[H $]".
-      iNext. iDestruct "H" as ([|[[]|][]]) "[H↦ H]"; try done.
+    { destruct x as [[|l|] | | |]=>//=. iDestruct "HT" as "[H $]".
+      iNext. iDestruct "H" as ([|[[]| | |][]]) "[H↦ H]"; try done.
       iExists _. iFrame. iDestruct "H" as (vl) "[#Hf H]".
-      iNext. destruct vl as [|[[|l'|]|][]]; try done. iExists l'. iSplit.
+      iNext. destruct vl as [|[[|l'|]| | |][]]; try done. iExists l'. iSplit.
       { iApply frac_bor_iff; last done. iIntros "!>!> *".
         rewrite heap_mapsto_vec_singleton. iSplit; auto. }
       iDestruct "H" as "#H". iIntros "!> * % $". iApply step_fupd_intro; first set_solver.

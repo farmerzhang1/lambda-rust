@@ -19,10 +19,10 @@ Section uniq_bor.
            □ ∀ F q, ⌜↑shrN ∪ ↑lftN ⊆ F⌝ -∗ q.[κ⊓κ']
                ={F}[F∖↑shrN]▷=∗ ty.(ty_shr) (κ⊓κ') tid l' ∗ q.[κ⊓κ']
     |}%I.
-  Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
+  Next Obligation. by iIntros (q ty tid [|[[]| | |][]]) "H". Qed.
   Next Obligation.
     move=> κ ty N κ' l tid ??/=. iIntros "#LFT Hshr Htok".
-    iMod (bor_exists with "LFT Hshr") as ([|[[|l'|]|][]]) "Hb"; first solve_ndisj;
+    iMod (bor_exists with "LFT Hshr") as ([|[[|l'|]| | |][]]) "Hb"; first solve_ndisj;
       (iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first solve_ndisj);
       try (iMod (bor_persistent with "LFT Hb2 Htok") as "[>[] _]"; solve_ndisj).
     iFrame. iExists l'. subst. rewrite heap_mapsto_vec_singleton.
@@ -51,7 +51,7 @@ Section uniq_bor.
   Proof.
     iIntros "#Hlft #Hty". iSplit; first done.
     iSplit; iModIntro.
-    - iIntros (? [|[[]|][]]) "H"; try done.
+    - iIntros (? [|[[]| | |][]]) "H"; try done.
       iApply (bor_shorten with "Hlft"). iApply bor_iff; last done.
       iNext. iModIntro.
       iDestruct "Hty" as "(_ & Hty & _)".
@@ -95,7 +95,7 @@ Section uniq_bor.
   Global Instance uniq_send κ ty :
     Send ty → Send (uniq_bor κ ty).
   Proof.
-    iIntros (Hsend tid1 tid2 [|[[]|][]]) "H"; try done.
+    iIntros (Hsend tid1 tid2 [|[[]| | |][]]) "H"; try done.
     iApply bor_iff; last done. iNext. iModIntro. iApply bi.equiv_iff.
     do 3 f_equiv. iSplit; iIntros "."; by iApply Hsend.
   Qed.
@@ -130,7 +130,7 @@ Section typing.
     iIntros (Hκκ' tid ??) "#LFT HE HL H". iDestruct (Hκκ' with "HL HE") as %H.
     iDestruct (lft_incl_syn_sem κ' κ H) as "Hκκ'".
     iFrame. rewrite tctx_interp_singleton tctx_interp_cons tctx_interp_singleton.
-    iDestruct "H" as ([[]|]) "[% Hb]"; try done.
+    iDestruct "H" as ([[]| | |]) "[% Hb]"; try done.
     iMod (rebor with "LFT Hκκ' Hb") as "[Hb Hext]"; first done. iModIntro.
     iSplitL "Hb"; iExists _; auto.
   Qed.
@@ -148,7 +148,7 @@ Section typing.
     Copy ty → lctx_lft_alive E L κ → ⊢ typed_read E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hcopy Halive) "!>".
-    iIntros ([[]|] tid F qmax qL ?) "#LFT #HE Htl HL Hown"; try done.
+    iIntros ([[]| | |] tid F qmax qL ?) "#LFT #HE Htl HL Hown"; try done.
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first solve_ndisj.
     iMod (bor_acc with "LFT Hown Hκ") as "[H↦ Hclose']"; first solve_ndisj.
     iDestruct "H↦" as (vl) "[>H↦ #Hown]".
@@ -162,7 +162,7 @@ Section typing.
     lctx_lft_alive E L κ → ⊢ typed_write E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
     rewrite typed_write_eq. iIntros (Halive) "!>".
-    iIntros ([[]|] tid F qmax qL ?) "#LFT HE HL Hown"; try done.
+    iIntros ([[]| | |] tid F qmax qL ?) "#LFT HE HL Hown"; try done.
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
     iMod (bor_acc with "LFT Hown Htok") as "[H↦ Hclose']"; first solve_ndisj.
     iDestruct "H↦" as (vl) "[>H↦ Hown]". rewrite ty.(ty_size_eq).

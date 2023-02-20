@@ -35,13 +35,13 @@ Section mutex.
            &at{κ, mutexN} (lock_proto l (&{κ'}((l +ₗ 1) ↦∗: ty.(ty_own) tid)))
     |}%I.
   Next Obligation.
-    iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
+    iIntros (??[|[[]| | |]]); try iIntros "[]". rewrite ty_size_eq.
     iIntros "[_ %] !% /=". congruence.
   Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hbor Htok".
     iMod (bor_acc_cons with "LFT Hbor Htok") as "[H Hclose]"; first done.
-    iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
+    iDestruct "H" as ([|[[| |n]| | |]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     rewrite heap_mapsto_vec_cons. iDestruct "H↦" as ">[Hl H↦]".
     iDestruct "H" as "[>EQ Hown]". iDestruct "EQ" as %[b ->].
     (* We need to turn the ohne borrow into two, so we close it -- and then
@@ -94,7 +94,7 @@ Section mutex.
     iDestruct ("EQ" with "HE") as "(% & #Howni & _) {EQ}".
     iSplit; last iSplit.
     - simpl. iPureIntro. f_equiv. done.
-    - iIntros "!> %tid %vl Hvl". destruct vl as [|[[| |n]|]vl]; try done.
+    - iIntros "!> %tid %vl Hvl". destruct vl as [|[[| |n]| | |]vl]; try done.
       simpl. iDestruct "Hvl" as "[$ Hvl]". by iApply "Howni".
     - iIntros "!> %κ %tid %l Hshr". iDestruct "Hshr" as (κ') "[Hincl Hshr]".
       iExists _. iFrame "Hincl". iApply (at_bor_iff with "[] Hshr"). iNext.
@@ -110,7 +110,7 @@ Section mutex.
   Global Instance mutex_send ty :
     Send ty → Send (mutex ty).
   Proof.
-    iIntros (??? [|[[| |n]|]vl]); try done. iIntros "[$ Hvl]".
+    iIntros (??? [|[[| |n]| | |]vl]); try done. iIntros "[$ Hvl]".
     by iApply send_change_tid.
   Qed.
 
@@ -150,7 +150,7 @@ Section code.
     rewrite !tctx_hasty_val /=.
     iDestruct (ownptr_uninit_own with "Hm") as (lm vlm) "(% & Hm & Hm†)".
     subst m. inv_vec vlm=>m vlm. simpl. iDestruct (heap_mapsto_vec_cons with "Hm") as "[Hm0 Hm]".
-    destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
+    destruct x as [[|lx|]| | |]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct (heap_mapsto_ty_own with "Hx") as (vl) "[>Hx Hxown]".
     (* All right, we are done preparing our context. Let's get going. *)
     wp_op. wp_apply (wp_memcpy with "[$Hm $Hx]"); [by rewrite vec_to_list_length..|].
@@ -185,9 +185,9 @@ Section code.
     rewrite !tctx_hasty_val /=.
     iDestruct (ownptr_uninit_own with "Hx") as (lx vlx) "(% & Hx & Hx†)".
     subst x. simpl.
-    destruct m as [[|lm|]|]; try done. iDestruct "Hm" as "[Hm Hm†]".
+    destruct m as [[|lm|]| | |]; try done. iDestruct "Hm" as "[Hm Hm†]".
     iDestruct (heap_mapsto_ty_own with "Hm") as (vlm) "[>Hm Hvlm]".
-    inv_vec vlm=>m vlm. destruct m as [[|m|]|]; try by iDestruct "Hvlm" as ">[]".
+    inv_vec vlm=>m vlm. destruct m as [[|m|]| | |]; try by iDestruct "Hvlm" as ">[]".
     simpl. iDestruct (heap_mapsto_vec_cons with "Hm") as "[Hm0 Hm]".
     iDestruct "Hvlm" as "[_ Hvlm]".
     (* All right, we are done preparing our context. Let's get going. *)
@@ -222,12 +222,12 @@ Section code.
     (* Go to Iris *)
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hm [Hm' _]]".
     rewrite !tctx_hasty_val [[m]]lock.
-    destruct m' as [[|lm'|]|]; try done. simpl.
+    destruct m' as [[|lm'|]| | |]; try done. simpl.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)";
       [solve_typing..|].
     iMod (bor_acc_cons with "LFT Hm' Hα") as "[Hm' Hclose2]"; first done.
     wp_op. iDestruct "Hm'" as (vl) "[H↦ Hm']".
-    destruct vl as [|[[|m'|]|] vl]; try done. simpl.
+    destruct vl as [|[[|m'|]| | |] vl]; try done. simpl.
     iDestruct (heap_mapsto_vec_cons with "H↦") as "[H↦1 H↦2]".
     iDestruct "Hm'" as "[% Hvl]".
     iMod ("Hclose2" $! ((lm' +ₗ 1) ↦∗: ty_own ty tid)%I with "[H↦1] [H↦2 Hvl]") as "[Hbor Hα]".

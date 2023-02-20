@@ -12,8 +12,8 @@ Section shr_bor.
          | [ #(LitLoc l) ] => ty.(ty_shr) κ tid l
          | _ => False
          end%I |}.
-  Next Obligation. by iIntros (κ ty tid [|[[]|][]]) "H". Qed.
-  Next Obligation. intros κ ty tid [|[[]|][]]; apply _. Qed.
+  Next Obligation. by iIntros (κ ty tid [|[[]| | |][]]) "H". Qed.
+  Next Obligation. intros κ ty tid [|[[]| | |][]]; apply _. Qed.
 
   Global Instance shr_bor_wf κ ty `{!TyWf ty} : TyWf (shr_bor κ ty) :=
     { ty_lfts := [κ]; ty_wf_E := ty_wf_E ty ++ ty_outlives_E ty κ }.
@@ -22,7 +22,7 @@ Section shr_bor.
     κ2 ⊑ κ1 -∗ type_incl ty1 ty2 -∗ type_incl (shr_bor κ1 ty1) (shr_bor κ2 ty2).
   Proof.
     iIntros "#Hκ #[_ [_ Hty]]". iApply type_incl_simple_type. simpl.
-    iIntros "!>" (tid [|[[]|][]]) "H"; try done. iApply "Hty".
+    iIntros "!>" (tid [|[[]| | |][]]) "H"; try done. iApply "Hty".
     iApply (ty1.(ty_shr_mono) with "Hκ"). done.
   Qed.
 
@@ -55,7 +55,7 @@ Section shr_bor.
 
   Global Instance shr_send κ ty :
     Sync ty → Send (shr_bor κ ty).
-  Proof. by iIntros (Hsync tid1 tid2 [|[[]|][]]) "H"; try iApply Hsync. Qed.
+  Proof. by iIntros (Hsync tid1 tid2 [|[[]| | |][]]) "H"; try iApply Hsync. Qed.
 End shr_bor.
 
 Notation "&shr{ κ }" := (shr_bor κ) (format "&shr{ κ }") : lrust_type_scope.
@@ -77,7 +77,7 @@ Section typing.
   Proof.
     iIntros (Hκκ' tid ??) "#LFT #HE HL [H _]". iDestruct (Hκκ' with "HL HE") as "%".
     iFrame. rewrite /tctx_interp /=.
-    iDestruct "H" as ([[]|]) "[% #Hshr]"; try done. iModIntro. iSplit.
+    iDestruct "H" as ([[]| | |]) "[% #Hshr]"; try done. iModIntro. iSplit.
     - iExists _. iSplit; first done. iApply (ty_shr_mono with "[] Hshr").
       by iApply lft_incl_syn_sem.
     - iSplit=> //. iExists _. auto.
@@ -87,7 +87,7 @@ Section typing.
     Copy ty → lctx_lft_alive E L κ → ⊢ typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hcopy Halive) "!>".
-    iIntros ([[]|] tid F qmax qL ?) "#LFT #HE Htl HL #Hshr"; try done.
+    iIntros ([[]| | |] tid F qmax qL ?) "#LFT #HE Htl HL #Hshr"; try done.
     iMod (Halive with "HE HL") as (q) "[Hκ Hclose]"; first solve_ndisj.
     iMod (copy_shr_acc with "LFT Hshr Htl Hκ") as (q') "(Htl & H↦ & Hcl)"; first solve_ndisj.
     { rewrite ->shr_locsE_shrN. solve_ndisj. }

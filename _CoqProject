@@ -47,6 +47,7 @@ theories/typing/shr_bor.v
 theories/typing/product.v
 theories/typing/product_split.v
 theories/typing/sum.v
+theories/typing/record.v
 theories/typing/bool.v
 theories/typing/int.v
 theories/typing/function.v
@@ -92,4 +93,5 @@ theories/typing/examples/unbox.v
 theories/typing/examples/init_prod.v
 theories/typing/examples/lazy_lft.v
 theories/typing/examples/nonlexical.v
+theories/typing/examples/records.v
 theories/slf/basics.v

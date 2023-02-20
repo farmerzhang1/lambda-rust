@@ -26,9 +26,9 @@ Section rwlock_functions.
     iApply (type_new (S ty.(ty_size))); [solve_typing..|].
     iIntros (r tid qmax) "#LFT HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
+    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]| | |]; try done.
     iDestruct "Hx" as "[Hx Hx†]". iDestruct "Hx" as (vl) "[Hx↦ Hx]".
-    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
+    destruct r as [[|lr|]| | |]; try done. iDestruct "Hr" as "[Hr Hr†]".
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own.
     iDestruct "Hr" as "[Hr↦ >SZ]". destruct vl' as [|]; iDestruct "SZ" as %[=].
     rewrite heap_mapsto_vec_cons. iDestruct "Hr↦" as "[Hr↦0 Hr↦1]". wp_op.
@@ -61,10 +61,10 @@ Section rwlock_functions.
     iApply (type_new ty.(ty_size)); [solve_typing..|].
     iIntros (r tid qmax) "#LFT HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]|]; try done.
+    iDestruct "HT" as "[Hr Hx]". destruct x as [[|lx|]| | |]; try done.
     iDestruct "Hx" as "[Hx Hx†]".
-    iDestruct "Hx" as ([|[[]|]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".
-    destruct r as [[|lr|]|]; try done. iDestruct "Hr" as "[Hr Hr†]".
+    iDestruct "Hx" as ([|[[]| | |]vl]) "[Hx↦ Hx]"; try iDestruct "Hx" as ">[]".
+    destruct r as [[|lr|]| | |]; try done. iDestruct "Hr" as "[Hr Hr†]".
     iDestruct "Hr" as (vl') "Hr". rewrite uninit_own heap_mapsto_vec_cons.
     iDestruct "Hr" as "[Hr↦ >%]". iDestruct "Hx↦" as "[Hx↦0 Hx↦1]". wp_op.
     iDestruct "Hx" as "[% Hx]". iDestruct (ty.(ty_size_eq) with "Hx") as %Hsz.
@@ -94,17 +94,17 @@ Section rwlock_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x'). simpl_subst.
     iIntros (tid qmax) "#LFT HE Hna HL HC HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|];  try iDestruct "Hx'" as "[]".
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]| | |];  try iDestruct "Hx'" as "[]".
     iAssert (&{α} (∃ (z : Z), lx' ↦ #z ∗ ⌜-1 ≤ z⌝) ∗
         (&uniq{α} ty).(ty_own) tid [ #(lx' +ₗ 1)])%I with "[> Hx']" as "[_ Hx']".
     { iApply bor_sep; [done..|]. iApply (bor_proper with "Hx'"). iSplit.
       - iIntros "[H1 H2]". iDestruct "H1" as (z) "[??]". iDestruct "H2" as (vl) "[??]".
         iExists (_::_). rewrite heap_mapsto_vec_cons. iFrame. iFrame.
-      - iIntros "H". iDestruct "H" as ([|[[| |z]|]vl]) "[H↦ H]"; try done.
+      - iIntros "H". iDestruct "H" as ([|[[| |z]| | |]vl]) "[H↦ H]"; try done.
         rewrite heap_mapsto_vec_cons.
         iDestruct "H" as "[H1 H2]". iDestruct "H↦" as "[H↦1 H↦2]".
         iSplitL "H1 H↦1"; eauto. iExists _. iFrame. }
-    destruct x as [[|lx|]|]; try done. iDestruct "Hx" as "[Hx Hx†]".
+    destruct x as [[|lx|]| | |]; try done. iDestruct "Hx" as "[Hx Hx†]".
     iDestruct "Hx" as (vl) "[Hx↦ Hx]". rewrite uninit_own. wp_op.
     iApply (type_type _ _ _
             [ #lx ◁ box (uninit 1); #(lx' +ₗ 1) ◁ &uniq{α}ty]
@@ -156,7 +156,7 @@ Section rwlock_functions.
     { iApply type_jump; solve_typing. }
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT".
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]| | |]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)";
       [solve_typing..|].
@@ -264,7 +264,7 @@ Section rwlock_functions.
     iApply type_deref; [solve_typing..|].
     iIntros (x' tid qmax) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite 2!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]|]; try done.
+    iDestruct "HT" as "(Hx & Hx' & Hr)". destruct x' as [[|lx|]| | |]; try done.
     iDestruct "Hx'" as (β γ) "#[Hαβ Hinv]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβtok Hclose']"; first done.

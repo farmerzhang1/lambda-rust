@@ -15,7 +15,7 @@ Section borrow.
     tctx_incl E L [p ◁ own_ptr n ty] [p ◁ &uniq{κ}ty; p ◁{κ} own_ptr n ty].
   Proof.
     iIntros (tid ??)  "#LFT _ $ [H _]".
-    iDestruct "H" as ([[]|]) "[% Hown]"; try done. iDestruct "Hown" as "[Hmt ?]".
+    iDestruct "H" as ([[]| | |]) "[% Hown]"; try done. iDestruct "Hown" as "[Hmt ?]".
     iMod (bor_create with "LFT Hmt") as "[Hbor Hext]"; first done.
     iModIntro. rewrite /tctx_interp /=. iSplitL "Hbor"; last iSplit; last done.
     - iExists _. auto.
@@ -28,7 +28,7 @@ Section borrow.
     iIntros (Hκ ???) "#LFT #HE HL Huniq".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; [try done..|].
     rewrite !tctx_interp_singleton /=.
-    iDestruct "Huniq" as ([[]|]) "[% Huniq]"; try done.
+    iDestruct "Huniq" as ([[]| | |]) "[% Huniq]"; try done.
     iMod (ty.(ty_share) with "LFT Huniq Htok") as "[Hown Htok]"; [solve_ndisj|].
     iMod ("Hclose" with "Htok") as "[$ $]". iExists _. by iFrame "%∗".
   Qed.
@@ -91,9 +91,9 @@ Section borrow.
     rewrite tctx_interp_singleton.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
-    wp_apply (wp_hasty with "Hp"). iIntros ([[|l|]|]) "_ Hown"; try done.
+    wp_apply (wp_hasty with "Hp"). iIntros ([[|l|]| | |]) "_ Hown"; try done.
     iMod (bor_acc_cons with "LFT Hown Htok") as "[H↦ Hclose']"; first done.
-    iDestruct "H↦" as ([|[[|l'|]|][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
+    iDestruct "H↦" as ([|[[|l'|]| | |][]]) "[>H↦ Hown]"; try iDestruct "Hown" as ">[]".
       iDestruct "Hown" as "[Hown H†]". rewrite heap_mapsto_vec_singleton -wp_fupd. wp_read.
     iMod ("Hclose'" $! (l↦#l' ∗ freeable_sz n (ty_size ty) l' ∗ _)%I
           with "[] [H↦ Hown H†]") as "[Hbor Htok]"; last 1 first.
@@ -123,7 +123,7 @@ Section borrow.
     rewrite tctx_interp_singleton.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first solve_ndisj.
-    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]| | |]) "_ Hown"; try done.
     iDestruct "Hown" as (l') "#[H↦b #Hown]".
     iMod (frac_bor_acc with "LFT H↦b Htok1") as (q''') "[>H↦ Hclose']"; first done.
     iApply (wp_step_fupd _ _ (_∖_) with "[Hown Htok2]"); try done.
@@ -152,10 +152,10 @@ Section borrow.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iDestruct (Hincl with "HL HE") as "%".
     iMod (Hκ with "HE HL") as (q) "[Htok Hclose]"; first solve_ndisj.
-    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]| | |]) "_ Hown"; try done.
     iMod (bor_exists with "LFT Hown") as (vl) "Hbor"; first done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hbor]"; first done.
-    destruct vl as [|[[]|][]];
+    destruct vl as [|[[]| | |][]];
       try by iMod (bor_persistent with "LFT Hbor Htok") as "[>[] _]".
     iMod (bor_acc with "LFT H↦ Htok") as "[>H↦ Hclose']"; first done.
     rewrite heap_mapsto_vec_singleton.
@@ -185,7 +185,7 @@ Section borrow.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iDestruct (Hincl with "HL HE") as "%".
     iMod (Hκ with "HE HL") as (q) "[[Htok1 Htok2] Hclose]"; first solve_ndisj.
-    wp_apply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hshr"; try done.
+    wp_apply (wp_hasty with "Hp"). iIntros ([[]| | |]) "_ Hshr"; try done.
     iDestruct "Hshr" as (l') "[H↦ Hown]".
     iMod (frac_bor_acc with "LFT H↦ Htok1") as (q'') "[>H↦ Hclose']"; first done.
     iAssert (κ ⊑ κ' ⊓ κ)%I as "#Hincl'".

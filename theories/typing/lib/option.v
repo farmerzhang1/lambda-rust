@@ -33,9 +33,13 @@ Section option.
       option_as_mut (fn(∀ α, ∅; &uniq{α} (option τ)) → option (&uniq{α}τ)).
   Proof.
     intros E L. iApply type_fn; [solve_typing..|]. iIntros "/= !>".
+    (* TYPE: o ◁ box (&uniq{α} (option τ)) note this BOX *)
     iIntros (α ϝ ret p). inv_vec p=>o. simpl_subst.
-    iApply type_deref; [solve_typing..|]. iIntros (o'). simpl_subst.
+    (* deref, o becomes uninit, o' is &uniq{x} (option τ) *)
+    iApply type_deref; [solve_typing..|]. 
+    iIntros (o'). simpl_subst.
     iApply type_new; [solve_typing..|]. iIntros (r). simpl_subst.
+    (* see letcont's typing rule, we have two premises, though I don't have an intuition for it *)
     iApply (type_cont [] [ϝ ⊑ₗ []] (λ _, [o ◁ _; r ◁ _])) ; [solve_typing..| |].
     - iIntros (k). simpl_subst.
       iApply type_case_uniq; [solve_typing..|].

@@ -41,14 +41,14 @@ Section mguard.
             □ ∀ F q, ⌜↑shrN ∪ ↑lftN ⊆ F⌝ -∗ q.[α⊓κ]
                 ={F}[F∖↑shrN]▷=∗ ty.(ty_shr) (α⊓κ) tid (l' +ₗ 1) ∗ q.[α⊓κ]
     |}%I.
-  Next Obligation. by iIntros (? ty tid [|[[]|][]]) "H". Qed.
+  Next Obligation. by iIntros (? ty tid [|[[]| | |][]]) "H". Qed.
   (* This is to a large extend copy-pasted from RWLock's write guard. *)
   Next Obligation.
     iIntros (α ty E κ l tid q HE) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
-    destruct vl as [|[[|l'|]|][]];
+    destruct vl as [|[[|l'|]| | |][]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     setoid_rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT Hb") as (β) "Hb"; first done.
@@ -92,7 +92,7 @@ Section mguard.
     iDestruct (Hty' with "HL") as "#Hty". clear Hty'. iDestruct (Hα with "HL") as "#Hα".
     iIntros "!> #HE". iDestruct ("Hα" with "HE") as %Hα12.
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs) {HE Hty}". iSplit; [done|iSplit; iModIntro].
-    - iIntros (tid [|[[]|][]]) "H"; try done. simpl.
+    - iIntros (tid [|[[]| | |][]]) "H"; try done. simpl.
       iDestruct "H" as (β) "(#H⊑ & #Hinv & Hown)".
       iExists β. iFrame. iSplit; last iSplit.
       + iApply lft_incl_trans; first by iApply lft_incl_syn_sem. done.
@@ -133,7 +133,7 @@ Section mguard.
   Global Instance mutexguard_send α ty :
     Send ty → Send (mutexguard α ty).
   Proof.
-    iIntros (??? [|[[]|][]]) "H"; try done. simpl. iRevert "H".
+    iIntros (??? [|[[]| | |][]]) "H"; try done. simpl. iRevert "H".
     iApply bi.exist_mono. iIntros (κ); simpl. apply bi.equiv_entails.
     repeat match goal with
            | |- (ty_own _ _ _) ≡ (ty_own _ _ _) => by apply send_change_tid'
@@ -177,7 +177,7 @@ Section code.
     (* Switch to Iris. *)
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hg [Hx [Hm _]]]".
     rewrite !tctx_hasty_val [[x]]lock /=.
-    destruct m as [[|lm|]|]; try done. iDestruct "Hm" as (κ') "[#Hακ' #Hshr]".
+    destruct m as [[|lm|]| | |]; try done. iDestruct "Hm" as (κ') "[#Hακ' #Hshr]".
     iDestruct (ownptr_uninit_own with "Hg") as (lg vlg) "(% & Hg & Hg†)".
     subst g. inv_vec vlg=>g. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
@@ -213,12 +213,12 @@ Section code.
     (* Switch to Iris. *)
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hg [Hg' _]]".
     rewrite !tctx_hasty_val [[g]]lock /=.
-    destruct g' as [[|lg|]|]; try done. simpl.
+    destruct g' as [[|lg|]| | |]; try done. simpl.
     iMod (bor_exists with "LFT Hg'") as (vl) "Hbor"; first done.
     iMod (bor_sep with "LFT Hbor") as "[H↦ Hprot]"; first done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)";
       [solve_typing..|].
-    destruct vl as [|[[|lm|]|] [|]]; simpl;
+    destruct vl as [|[[|lm|]| | |] [|]]; simpl;
       try by iMod (bor_persistent with "LFT Hprot Hα") as "[>[] _]".
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT Hprot") as (κ) "Hprot"; first done.
@@ -255,7 +255,7 @@ Section code.
     (* Switch to Iris. *)
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hg [Hg' _]]".
     rewrite !tctx_hasty_val [[g]]lock /=.
-    destruct g' as [[|lg|]|]; try done. simpl.
+    destruct g' as [[|lg|]| | |]; try done. simpl.
     iDestruct "Hg'" as (lm) "[Hlg Hshr]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "([Hα1 Hα2] & HL & Hclose1)";
       [solve_typing..|].
@@ -298,7 +298,7 @@ Section code.
     (* Switch to Iris. *)
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hg [Hm _]]".
     rewrite !tctx_hasty_val [[g]]lock /=.
-    destruct m as [[|lm|]|]; try done. iDestruct "Hm" as (β) "(#Hαβ & #Hshr & Hcnt)".
+    destruct m as [[|lm|]| | |]; try done. iDestruct "Hm" as (β) "(#Hαβ & #Hshr & Hcnt)".
     (* All right, we are done preparing our context. Let's get going. *)
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
     wp_apply (release_spec with "[] [Hα Hcnt]");

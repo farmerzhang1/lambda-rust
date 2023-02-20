@@ -19,7 +19,7 @@ Section case.
   Proof.
     iIntros (Hel tid qmax) "#LFT #HE Hna HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
+    iApply (wp_hasty with "Hp"). iIntros ([[]| | |] Hv) "Hp"; try done.
     iDestruct "Hp" as "[H↦ Hf]". iDestruct "H↦" as (vl) "[H↦ Hown]".
     iDestruct "Hown" as (i vl' vl'') "(>% & >EQlen & Hown)". subst.
     simpl ty_size. iDestruct "EQlen" as %[=EQlen]. rewrite -EQlen. simpl length.
@@ -65,7 +65,7 @@ Section case.
   Proof.
     iIntros (Halive Hel tid qmax) "#LFT #HE Hna HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros ([[|l|]|] Hv) "Hp"; try iDestruct "Hp" as "[]".
+    iApply (wp_hasty with "Hp"). iIntros ([[|l|] | | |] Hv) "Hp"; try iDestruct "Hp" as "[]".
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first done.
     iMod (bor_acc_cons with "LFT Hp Htok") as "[H↦ Hclose']"; first done.
@@ -121,7 +121,7 @@ Section case.
   Proof.
     iIntros (Halive Hel tid qmax) "#LFT #HE Hna HL HC HT". wp_bind p.
     rewrite tctx_interp_cons. iDestruct "HT" as "[Hp HT]".
-    iApply (wp_hasty with "Hp"). iIntros ([[]|] Hv) "Hp"; try done.
+    iApply (wp_hasty with "Hp"). iIntros ([[]| | |] Hv) "Hp"; try done.
     iDestruct "Hp" as (i) "[#Hb Hshr]".
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Halive with "HE HL") as (q) "[Htok Hclose]"; first done.

@@ -26,7 +26,7 @@ Section rwlockwriteguard_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]| | |]; try done.
     iDestruct "Hx'" as (l') "#[Hfrac Hshr]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "([Hα1 Hα2] & HL & Hclose)";
       [solve_typing..|].
@@ -71,11 +71,11 @@ Section rwlockwriteguard_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]| | |]; try done.
     iMod (bor_exists with "LFT Hx'") as (vl) "H"; first done.
     iMod (bor_sep with "LFT H") as "[H↦ H]"; first done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
-    destruct vl as [|[[|l|]|][]];
+    destruct vl as [|[[|l|]| | |][]];
       try by iMod (bor_persistent with "LFT H Hα") as "[>[] _]".
     rewrite heap_mapsto_vec_singleton.
     iMod (bor_exists with "LFT H") as (γ) "H"; first done.
@@ -118,7 +118,7 @@ Section rwlockwriteguard_functions.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
-    destruct x' as [[|lx'|]|]; try done. simpl.
+    destruct x' as [[|lx'|]| | |]; try done. simpl.
     iDestruct "Hx'" as (γ β tid_own) "(Hx' & #Hαβ & #Hinv & H◯)".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)";
       [solve_typing..|].

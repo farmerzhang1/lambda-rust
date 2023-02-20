@@ -126,13 +126,13 @@ Section rc.
                 rc_persist tid ν γ l' ty ∗
                 &na{κ, tid, rc_shrN}(own γ (rc_tok q'))
     |}%I.
-  Next Obligation. by iIntros (ty tid [|[[]|][]]) "H". Qed.
+  Next Obligation. by iIntros (ty tid [|[[]| | |][]]) "H". Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
-    destruct vl as [|[[|l'|]|][|]];
+    destruct vl as [|[[|l'|]| | |][|]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     setoid_rewrite heap_mapsto_vec_singleton.
     iFrame "Htok". iExists _. iFrame "#". rewrite bor_unfold_idx.
@@ -211,7 +211,7 @@ Section rc.
   Proof.
     iIntros "#Hincl". iPoseProof "Hincl" as "(#Hsz & #Hoincl & #Hsincl)".
     iSplit; first done. iSplit; iModIntro.
-    - iIntros "%tid %vl Hvl". destruct vl as [|[[|vl|]|] [|]]; try done.
+    - iIntros "%tid %vl Hvl". destruct vl as [|[[|vl|]| | |] [|]]; try done.
       iDestruct "Hvl" as "[(Hl1 & Hl2 & H† & Hc) | Hvl]".
       { iLeft. iFrame. iDestruct "Hsz" as %->.
         iFrame. iApply (heap_mapsto_pred_wand with "Hc"). iApply "Hoincl". }
@@ -400,7 +400,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock [[r]]lock.
-    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    destruct rc' as [[|lrc|]| | |]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
     (* All right, we are done preparing our context. Let's get going. *)
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
     wp_bind (!_)%E.
@@ -460,7 +460,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock [[r]]lock.
-    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    destruct rc' as [[|lrc|]| | |]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
     (* All right, we are done preparing our context. Let's get going. *)
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
     wp_bind (!_)%E.
@@ -564,7 +564,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[x]]lock.
-    destruct rc' as [[|lrc|]|]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
+    destruct rc' as [[|lrc|]| | |]; try done. iDestruct "Hrc'" as (l') "[#Hlrc #Hshr]".
     iDestruct (ownptr_uninit_own with "Hr") as (lr vlr) "(% & Hr & Hr†)".
     subst r. inv_vec vlr=>r. rewrite heap_mapsto_vec_singleton.
     (* All right, we are done preparing our context. Let's get going. *)
@@ -629,7 +629,7 @@ Section code.
     rewrite !tctx_hasty_val [[rcx]]lock.
     iDestruct (ownptr_uninit_own with "Hx") as (lrc2 vlrc2) "(% & Hx & Hx†)".
     subst x. inv_vec vlrc2=>?. rewrite heap_mapsto_vec_singleton.
-    destruct rc' as [[|rc'|]|]; try done. simpl of_val.
+    destruct rc' as [[|rc'|]| | |]; try done. simpl of_val.
     iDestruct "Hrc'" as (l') "[Hrc' #Hdelay]".
     (* All right, we are done preparing our context. Let's get going. *)
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)"; [solve_typing..|].
@@ -697,7 +697,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hrcx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[rcx]]lock [[r]]lock.
-    destruct rc' as [[|rc'|]|]; try done.
+    destruct rc' as [[|rc'|]| | |]; try done.
     rewrite [[ #rc' ]]lock. wp_op. rewrite shift_loc_0 -(lock [ #rc' ]).
     wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
     iIntros (strong) "[Hrc Hc]". wp_let.
@@ -792,7 +792,7 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hrcx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[rcx]]lock [[r]]lock.
-    destruct rc' as [[|rc'|]|]; try done. rewrite [[ #rc' ]]lock.
+    destruct rc' as [[|rc'|]| | |]; try done. rewrite [[ #rc' ]]lock.
     wp_op. rewrite shift_loc_0. rewrite -(lock [ #rc' ]).
     wp_apply (rc_check_unique with "[$Hna $Hrc']"); first solve_ndisj.
     iIntros (strong) "[Hrc Hc]". wp_let. wp_op. rewrite shift_loc_0.
@@ -882,12 +882,12 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hrcx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val  [[rcx]]lock [[r]]lock.
-    destruct rc' as [[|rc'|]|]; try done.
+    destruct rc' as [[|rc'|]| | |]; try done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "(Hα & HL & Hclose1)"; [solve_typing..|].
     iMod (bor_acc_cons with "LFT Hrc' Hα") as "[Hrc' Hclose2]"; first solve_ndisj.
     iDestruct (heap_mapsto_ty_own with "Hrc'") as (vl) "[>Hrc' Hrcown]".
     inv_vec vl=>l. rewrite heap_mapsto_vec_singleton.
-    wp_read. destruct l as [[|l|]|]; try done.
+    wp_read. destruct l as [[|l|]| | |]; try done.
     wp_let. wp_op. rewrite shift_loc_0.
     wp_apply (rc_check_unique with "[$Hna Hrcown]"); first done.
     { (* Boy this is silly... *) iDestruct "Hrcown" as "[(?&?&?&?)|?]"; last by iRight.
@@ -1014,13 +1014,13 @@ Section code.
     iApply type_deref; [solve_typing..|]; iIntros (rc'); simpl_subst.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk [Hrcx [Hrc' [Hr _]]]".
     rewrite !tctx_hasty_val [[rcx]]lock [[r]]lock.
-    destruct rc' as [[|rc'|]|]; try done.
+    destruct rc' as [[|rc'|]| | |]; try done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (q) "([Hα1 Hα2] & HL & Hclose1)";
       [solve_typing..|].
     iMod (bor_acc_cons with "LFT Hrc' Hα1") as "[Hrc' Hclose2]"; first solve_ndisj.
     iDestruct (heap_mapsto_ty_own with "Hrc'") as (vl) "[>Hrc' Hrcown]".
     inv_vec vl=>l. rewrite heap_mapsto_vec_singleton.
-    wp_read. destruct l as [[|l|]|]; try done. wp_let. wp_op. rewrite shift_loc_0.
+    wp_read. destruct l as [[|l|]| | |]; try done. wp_let. wp_op. rewrite shift_loc_0.
     wp_apply (rc_check_unique with "[$Hna Hrcown]"); first done.
     { (* Boy this is silly... *) iDestruct "Hrcown" as "[(?&?&?&?)|?]"; last by iRight.
       iLeft. by iFrame. }
@@ -1100,7 +1100,7 @@ Section code.
       { rewrite big_sepL_singleton tctx_hasty_val' //. rewrite /= freeable_sz_full_S.
         iFrame. iExists [_]. rewrite heap_mapsto_vec_singleton. iFrame.
         iApply ty_shr_mono; last done. iApply lft_intersect_incl_r. }
-      iIntros ([[|cl|]|]) "Hna Hαν Hcl //". wp_rec.
+      iIntros ([[|cl|]| | |]) "Hna Hαν Hcl //". wp_rec.
       iDestruct "Hcl" as "[Hcl Hcl†]". iDestruct "Hcl" as (vl) "[Hcl↦ Hown]".
       iDestruct (ty_size_eq with "Hown") as %Hsz.
       iDestruct ("Hclose3" with "Hαν") as "[Hα2 Hν]".

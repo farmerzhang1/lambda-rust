@@ -123,13 +123,13 @@ Section rwlock.
        ty_shr κ tid l :=
          (∃ α γ, κ ⊑ α ∗ &at{α,rwlockN}(rwlock_inv tid tid l γ α ty))%I |}.
   Next Obligation.
-    iIntros (??[|[[]|]]); try iIntros "[]". rewrite ty_size_eq.
+    iIntros (??[|[[]| | |]]); try iIntros "[]". rewrite ty_size_eq.
     iIntros "[_ %] !% /=". congruence.
   Qed.
   Next Obligation.
     iIntros (ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_acc_cons with "LFT Hb Htok") as "[H Hclose]"; first done.
-    iDestruct "H" as ([|[[| |n]|]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
+    iDestruct "H" as ([|[[| |n]| | |]vl]) "[H↦ H]"; try iDestruct "H" as ">[]".
     iDestruct "H" as "[>% Hown]".
     iMod ("Hclose" $! ((∃ n:Z, l ↦ #n ∗ ⌜-1 ≤ n⌝) ∗
             (l +ₗ 1) ↦∗: ty.(ty_own) tid) with "[] [-]")%I as "[H [Htok Htok']]".
@@ -197,7 +197,7 @@ Section rwlock.
     iIntros "!> #HE". iDestruct ("EQ'" with "HE") as "(% & #Hown & #Hshr)".
     iSplit; [|iSplit].
     - iPureIntro. simpl. congruence.
-    - iIntros "!> %tid %vl H". destruct vl as [|[[]|]]; try done.
+    - iIntros "!> %tid %vl H". destruct vl as [|[[]| | |]]; try done.
       iDestruct "H" as "[$ H]". by iApply "Hown".
     - iIntros "!> %α %tid %l H". simpl.
       iDestruct "H" as (a γ) "[Ha H]". iExists a, γ. iFrame.
@@ -218,7 +218,7 @@ Section rwlock.
      contrarily to Rust's implementation. *)
   Global Instance rwlock_send ty :
     Send ty → Send (rwlock ty).
-  Proof. move=>???[|[[]|]]//=??. iIntros "[$?]". by iApply send_change_tid. Qed.
+  Proof. move=>???[|[[]| | |]]//=??. iIntros "[$?]". by iApply send_change_tid. Qed.
 
   Global Instance rwlock_sync ty :
     Send ty → Sync ty → Sync (rwlock ty).

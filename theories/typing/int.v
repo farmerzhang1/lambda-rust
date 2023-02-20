@@ -12,8 +12,8 @@ Section int.
          | [ #(LitInt z)] => True
          | _ => False
          end%I |}.
-  Next Obligation. intros ? [|[[]|] []]; auto. Qed.
-  Next Obligation. intros ? [|[[]|] []]; apply _. Qed.
+  Next Obligation. intros ? [|[[]| | |] []]; auto. Qed.
+  Next Obligation. intros ? [|[[]| | |] []]; apply _. Qed.
 
   Global Instance int_wf : TyWf int := { ty_lfts := []; ty_wf_E := [] }.
 
@@ -40,8 +40,8 @@ Section typing.
     ⊢ typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 + p2) int.
   Proof.
     iIntros (tid ?) "_ _ $ $ [Hp1 [Hp2 _]]".
-    wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
-    wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
+    wp_apply (wp_hasty with "Hp1"). iIntros ([[]| | |]) "_ H1"; try done.
+    wp_apply (wp_hasty with "Hp2"). iIntros ([[]| | |]) "_ H2"; try done.
     wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
@@ -56,8 +56,8 @@ Section typing.
     ⊢ typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 - p2) int.
   Proof.
     iIntros (tid ?) "_ _ $ $ [Hp1 [Hp2 _]]".
-    wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
-    wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
+    wp_apply (wp_hasty with "Hp1"). iIntros ([[]| | |]) "_ H1"; try done.
+    wp_apply (wp_hasty with "Hp2"). iIntros ([[]| | |]) "_ H2"; try done.
     wp_op. by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 
@@ -72,8 +72,8 @@ Section typing.
     ⊢ typed_instruction_ty E L [p1 ◁ int; p2 ◁ int] (p1 ≤ p2) bool.
   Proof.
     iIntros (tid ?) "_ _ $ $ [Hp1 [Hp2 _]]".
-    wp_apply (wp_hasty with "Hp1"). iIntros ([[]|]) "_ H1"; try done.
-    wp_apply (wp_hasty with "Hp2"). iIntros ([[]|]) "_ H2"; try done.
+    wp_apply (wp_hasty with "Hp1"). iIntros ([[]| | |]) "_ H1"; try done.
+    wp_apply (wp_hasty with "Hp2"). iIntros ([[]| | |]) "_ H2"; try done.
     wp_op; case_bool_decide; by rewrite tctx_interp_singleton tctx_hasty_val' //.
   Qed.
 

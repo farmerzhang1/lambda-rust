@@ -199,8 +199,8 @@ Section typing.
     iIntros (tid qmax) "#LFT #HE Htl HL HC".
     rewrite 3!tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iIntros "(Hr & Hc & #Hc' & Hx)".
-    destruct c' as [[|c'|]|]; try done. destruct x as [[|x|]|]; try done.
-    destruct r as [[|r|]|]; try done.
+    destruct c' as [[|c'|]| | |]; try done. destruct x as [[|x|]| | |]; try done.
+    destruct r as [[|r|]| | |]; try done.
     iMod (lctx_lft_alive_tok α with "HE HL") as (q') "(Htok & HL & Hclose1)"; [solve_typing..|].
     iMod (na_bor_acc with "LFT Hc' Htok Htl") as "(Hc'↦ & Htl & Hclose2)"; [solve_ndisj..|].
     iDestruct "Hc'↦" as (vc') "[>Hc'↦ Hc'own]".

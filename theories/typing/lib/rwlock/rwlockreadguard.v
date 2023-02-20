@@ -30,13 +30,13 @@ Section rwlockreadguard.
          ∃ (l' : loc),
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
            ▷ ty.(ty_shr) (α ⊓ κ) tid (l' +ₗ 1) |}%I.
-  Next Obligation. intros α ty tid [|[[]|] []]; auto. Qed.
+  Next Obligation. intros α ty tid [|[[]| | |] []]; auto. Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q ?) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
-    destruct vl as [|[[|l'|]|][]];
+    destruct vl as [|[[|l'|]| | |][]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (ν) "Hb"; first done.
     iMod (bor_exists with "LFT Hb") as (q') "Hb"; first done.
@@ -86,7 +86,7 @@ Section rwlockreadguard.
     iIntros "!> #HE". iDestruct ("Hα" with "HE") as %Hα1α2.
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iModIntro].
     - done.
-    - iIntros (tid [|[[]|][]]) "H"; try done.
+    - iIntros (tid [|[[]| | |][]]) "H"; try done.
       iDestruct "H" as (ν q' γ β tid_own) "(#Hshr & #H⊑ & #Hinv & Htok & Hown)".
       iExists ν, q', γ, β, tid_own. iFrame "∗#". iSplit; last iSplit.
       + iApply ty_shr_mono; last by iApply "Hs".
@@ -129,7 +129,7 @@ Section rwlockreadguard.
   Global Instance rwlockreadguard_send α ty :
     Sync ty → Send (rwlockreadguard α ty).
   Proof.
-    iIntros (??? [|[[]|][]]) "H"; try done. simpl. iRevert "H".
+    iIntros (??? [|[[]| | |][]]) "H"; try done. simpl. iRevert "H".
     iApply bi.exist_mono. iIntros (κ); simpl. apply bi.equiv_entails.
     repeat lazymatch goal with
            | |- (ty_shr _ _ _ _) ≡ (ty_shr _ _ _ _) => by apply sync_change_tid'

@@ -12,8 +12,8 @@ Section bool.
          | [ #(LitInt (0|1))] => True
          | _ => False
          end%I |}.
-  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; auto. Qed.
-  Next Obligation. intros ? [|[[| |[|[]|]]|] []]; apply _. Qed.
+  Next Obligation. intros ? [|[[| |[|[]|]]| | | ] []]; auto. Qed.
+  Next Obligation. intros ? [|[[| |[|[]|]]| | |] []]; apply _. Qed.
 
   Global Instance bool_wf : TyWf bool := { ty_lfts := []; ty_wf_E := [] }.
 
@@ -44,7 +44,7 @@ Section typing.
     iIntros (Hp) "He1 He2". iIntros (tid qmax) "#LFT #HE Htl HL HC HT".
     iDestruct (big_sepL_elem_of _ _ _ Hp with "HT") as "#Hp".
     wp_bind p. iApply (wp_hasty with "Hp").
-    iIntros ([[| |[|[]|]]|]) "_ H1"; try done; wp_case.
+    iIntros ([[| |[|[]|]]| | |]) "_ H1"; try done; wp_case.
     - iApply ("He2" with "LFT HE Htl HL HC HT").
     - iApply ("He1" with "LFT HE Htl HL HC HT").
   Qed.

@@ -52,6 +52,7 @@ Global Instance: Params (@ty_shr) 2 := {}.
 
 Global Arguments ty_own {_ _} !_ _ _ / : simpl nomatch.
 
+(* well-formedness? *)
 Class TyWf `{!typeGS Σ} (ty : type) := { ty_lfts : list lft; ty_wf_E : elctx }.
 Global Arguments ty_lfts {_ _} _ {_}.
 Global Arguments ty_wf_E {_ _} _ {_}.

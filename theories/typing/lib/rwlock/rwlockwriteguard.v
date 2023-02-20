@@ -31,13 +31,13 @@ Section rwlockwriteguard.
            &frac{κ} (λ q, l↦∗{q} [ #l']) ∗
            □ ∀ F q, ⌜↑shrN ∪ ↑lftN ⊆ F⌝ -∗ q.[α ⊓ κ] ={F}[F∖↑shrN]▷=∗
                ty.(ty_shr) (α ⊓ κ) tid (l' +ₗ 1) ∗ q.[α ⊓ κ] |}%I.
-  Next Obligation. by iIntros (???[|[[]|][]]) "?". Qed.
+  Next Obligation. by iIntros (???[|[[]| | |][]]) "?". Qed.
   Next Obligation.
     iIntros (α ty E κ l tid q HE) "#LFT Hb Htok".
     iMod (bor_exists with "LFT Hb") as (vl) "Hb"; first done.
     iMod (bor_sep with "LFT Hb") as "[H↦ Hb]"; first done.
     iMod (bor_fracture (λ q, l ↦∗{q} vl)%I with "LFT H↦") as "#H↦"; first done.
-    destruct vl as [|[[|l'|]|][]];
+    destruct vl as [|[[|l'|]| | |][]];
       try by iMod (bor_persistent with "LFT Hb Htok") as "[>[] _]".
     iMod (bor_exists with "LFT Hb") as (γ) "Hb"; first done.
     iMod (bor_exists with "LFT Hb") as (β) "Hb"; first done.
@@ -85,7 +85,7 @@ Section rwlockwriteguard.
     iIntros "!> #HE". iDestruct ("Hα" with "HE") as %Hα1α2.
     iDestruct ("Hty" with "HE") as "(%&#Ho&#Hs)". iSplit; [|iSplit; iModIntro].
     - done.
-    - iIntros (tid [|[[]|][]]) "H"; try done.
+    - iIntros (tid [|[[]| | |][]]) "H"; try done.
       iDestruct "H" as (γ β tid_shr) "(Hb & #H⊑ & #Hinv & Hown)".
       iExists γ, β, tid_shr. iFrame "∗#". iSplit; last iSplit.
       + iApply bor_iff; last done.
@@ -135,7 +135,7 @@ Section rwlockwriteguard.
   Global Instance rwlockwriteguard_send α ty :
     Send ty → Send (rwlockwriteguard α ty).
   Proof.
-    iIntros (??? [|[[]|][]]) "H"; try done. simpl. iRevert "H".
+    iIntros (??? [|[[]| | |][]]) "H"; try done. simpl. iRevert "H".
     iApply bi.exist_mono. iIntros (κ); simpl. apply bi.equiv_entails.
     repeat lazymatch goal with
            | |- (ty_own _ _ _) ≡ (ty_own _ _ _) => by apply send_change_tid'

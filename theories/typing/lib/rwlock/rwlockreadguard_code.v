@@ -26,7 +26,7 @@ Section rwlockreadguard_functions.
     iApply type_deref; [solve_typing..|]. iIntros (x').
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT". simpl_subst.
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
-    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]|]; try done.
+    iDestruct "HT" as "[Hx Hx']". destruct x' as [[|lx'|]| | |]; try done.
     iDestruct "Hx'" as (l') "#[Hfrac Hshr]".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (frac_bor_acc with "LFT Hfrac Hα") as (qlx') "[H↦ Hcloseα]"; first done.
@@ -71,7 +71,7 @@ Section rwlockreadguard_functions.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk HT".
     rewrite tctx_interp_cons tctx_interp_singleton !tctx_hasty_val.
     iDestruct "HT" as "[Hx Hx']".
-    destruct x' as [[|lx'|]|]; try done. simpl.
+    destruct x' as [[|lx'|]| | |]; try done. simpl.
     iDestruct "Hx'" as (ν q γ β tid_own) "(Hx' & #Hαβ & #Hinv & Hν & H◯ & H†)".
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose)"; [solve_typing..|].
     iMod (lft_incl_acc with "Hαβ Hα") as (qβ) "[Hβ Hcloseα]"; first done.

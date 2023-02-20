@@ -653,7 +653,7 @@ Section ghostcell.
       iDestruct "Hc" as (l vl) "(% & Hl & Hatc & Hfree)".
       subst.
       inv_vec vl'=>ls'.
-      destruct ls' as [[|ls|]|]; try by iDestruct "Hats" as "> []".
+      destruct ls' as [[|ls|]| | |]; try by iDestruct "Hats" as "> []".
       inv_vec vl=>lc'.
       iAssert _ with "Hatc" as "#Hatc'".
       iDestruct (shr_is_ptr with "Hatc'") as (lc) "> H". iDestruct "H" as %H.

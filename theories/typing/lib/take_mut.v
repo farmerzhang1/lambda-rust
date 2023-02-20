@@ -32,7 +32,7 @@ Section code.
     iIntros (tid qmax) "#LFT #HE Hna HL Hk (Ht & Hf' & Hx & Hx' & Henv & _)".
     rewrite !tctx_hasty_val [[x]]lock [[env]]lock [fn _]lock.
     iDestruct (ownptr_uninit_own with "Ht") as (tl tvl) "(% & >Htl & Htl†)". subst t. simpl.
-    destruct x' as [[|lx'|]|]; try done. simpl.
+    destruct x' as [[|lx'|]| | |]; try done. simpl.
     iMod (lctx_lft_alive_tok α with "HE HL") as (qα) "(Hα & HL & Hclose1)"; [solve_typing..|].
     iMod (lctx_lft_alive_tok_noend ϝ with "HE HL") as (qϝ) "(Hϝ & HL & Hclose2)"; [solve_typing..|].
     iMod (bor_acc with "LFT Hx' Hα") as "[Hx' Hclose3]"; first done.

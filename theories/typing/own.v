@@ -57,6 +57,10 @@ Section own.
 
             Since this assertion is timeless, this should not cause
             problems. *)
+          (* 
+            ↦∗: 这个神奇的notation，估计是说存在某一个 heap value 被 own ，然后还满足冒号后面的predicate
+            没猜错，see theories/lang/heap.v
+          *)
            ▷ (l ↦∗: ty.(ty_own) tid ∗ freeable_sz n ty.(ty_size) l)
          | _ => False
          end%I;
@@ -64,12 +68,12 @@ Section own.
          (∃ l':loc, &frac{κ}(λ q', l ↦{q'} #l') ∗
             □ (∀ F q, ⌜↑shrN ∪ ↑lftN ⊆ F⌝ -∗ q.[κ] ={F}[F∖↑shrN]▷=∗
                             ty.(ty_shr) κ tid l' ∗ q.[κ]))%I |}.
-  Next Obligation. by iIntros (q ty tid [|[[]|][]]) "H". Qed.
+  Next Obligation. by iIntros (q ty tid [|[[]| | |][]]) "H". Qed.
   Next Obligation.
     move=>n ty N κ l tid ?? /=. iIntros "#LFT Hshr Htok".
     iMod (bor_exists with "LFT Hshr") as (vl) "Hb"; first solve_ndisj.
     iMod (bor_sep with "LFT Hb") as "[Hb1 Hb2]"; first solve_ndisj.
-    destruct vl as [|[[|l'|]|][]];
+    destruct vl as [|[[|l'|]| | |][]];
       try (iMod (bor_persistent with "LFT Hb2 Htok") as "[>[]_]"; solve_ndisj).
     iFrame. iExists l'. rewrite heap_mapsto_vec_singleton.
     rewrite bi.later_sep.
@@ -95,7 +99,7 @@ Section own.
     ▷ ⌜n = m⌝ -∗ ▷ type_incl ty1 ty2 -∗ type_incl (own_ptr n ty1) (own_ptr m ty2).
   Proof.
     iIntros "#Heq (#Hsz & #Ho & #Hs)". iSplit; first done. iSplit; iModIntro.
-    - iIntros (?[|[[| |]|][]]) "H"; try done. simpl.
+    - iIntros (?[|[[| |]| | |][]]) "H"; try done. simpl.
       iDestruct "H" as "[Hmt H†]". iNext. iDestruct ("Hsz") as %<-.
       iDestruct "Heq" as %->. iFrame. iApply (heap_mapsto_pred_wand with "Hmt").
       iApply "Ho".
@@ -132,7 +136,7 @@ Section own.
   Global Instance own_send n ty :
     Send ty → Send (own_ptr n ty).
   Proof.
-    iIntros (Hsend tid1 tid2 [|[[| |]|][]]) "H"; try done.
+    iIntros (Hsend tid1 tid2 [|[[| |]| | |][]]) "H"; try done.
     iDestruct "H" as "[Hm $]". iNext. iApply (heap_mapsto_pred_wand with "Hm").
     iIntros (vl) "?". by iApply Hsend.
   Qed.
@@ -193,7 +197,7 @@ Section util.
          ⌜v = #l⌝ ∗ ▷ l ↦∗ vl ∗ ▷ ty.(ty_own) tid vl ∗ ▷ freeable_sz n ty.(ty_size) l.
   Proof.
     iSplit.
-    - iIntros "Hown". destruct v as [[|l|]|]; try done.
+    - iIntros "Hown". destruct v as [[|l|]| | |]; try done.
       iExists l. iDestruct "Hown" as "[Hown $]". rewrite heap_mapsto_ty_own.
       iDestruct "Hown" as (vl) "[??]". eauto with iFrame.
     - iIntros "Hown". iDestruct "Hown" as (l vl) "(% & ? & ? & ?)". subst v.
@@ -223,7 +227,7 @@ Section typing.
     ty.(ty_size) = ty'.(ty_size) → ⊢ typed_write E L (own_ptr n ty') ty (own_ptr n ty).
   Proof.
     rewrite typed_write_eq. iIntros (Hsz) "!>".
-    iIntros ([[]|] tid F qmax qL ?) "_ _ $ Hown"; try done.
+    iIntros ([[]| | |] tid F qmax qL ?) "_ _ $ Hown"; try done.
     rewrite /= Hsz. iDestruct "Hown" as "[H↦ $]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%". iExists _, _. iFrame "H↦". auto.
   Qed.
@@ -232,7 +236,7 @@ Section typing.
     Copy ty → ⊢ typed_read E L (own_ptr n ty) ty (own_ptr n ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hsz) "!>".
-    iIntros ([[|l|]|] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
+    iIntros ([[|l|]| | |] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ #Hown]".
     iExists l, _, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !>".
     iExists _. auto.
@@ -242,7 +246,7 @@ Section typing.
     ⊢ typed_read E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
   Proof.
     rewrite typed_read_eq. iModIntro.
-    iIntros ([[|l|]|] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
+    iIntros ([[|l|]| | |] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%".
     iExists l, vl, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !> !>".
@@ -288,7 +292,7 @@ Section typing.
     ⊢ typed_instruction E L [p ◁ own_ptr ty.(ty_size) ty] (delete [ #n; p])%E (λ _, []).
   Proof.
     iIntros (<- tid qmax) "#LFT #HE $ $ Hp". rewrite tctx_interp_singleton.
-    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]|]) "_ Hown"; try done.
+    wp_bind p. iApply (wp_hasty with "Hp"). iIntros ([[]| | |]) "_ Hown"; try done.
     iDestruct "Hown" as "[H↦: >H†]". iDestruct "H↦:" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>EQ".
     iDestruct "EQ" as %<-. iApply (wp_delete with "[-]"); auto.
