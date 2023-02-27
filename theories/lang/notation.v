@@ -25,8 +25,11 @@ Notation "# l" := (Lit l%Z%V%L) (at level 8, format "# l") : expr_scope.
 Notation "'case:' e0 'of' el" := (Case e0%E el%E)
   (at level 102, e0, el at level 150) : expr_scope.
 Notation "'rnil'" := RecordNil : expr_scope.
-Notation "l ':' e1 '::' e2" := (RecordCons l e1%E e2%E)
-  (at level 105, right associativity) : expr_scope.
+Notation "'rnil'" := RecordVNil : val_scope.
+Notation "l '/:' e1 ':+:' e2" := (RecordCons l e1%E e2%E)
+  (at level 50, e1, e2 at level 90, right associativity) : expr_scope.
+Notation "l '/:' e1 ':+:' e2" := (RecordVCons l e1%V e2%V)
+  (at level 50, e1, e2 at level 90, right associativity) : val_scope.
 Notation "'if:' e1 'then' e2 'else' e3" := (If e1%E e2%E e3%E)
   (only parsing, at level 102, e1, e2, e3 at level 150) : expr_scope.
 Notation "☠" := LitPoison : val_scope.

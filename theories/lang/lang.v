@@ -383,9 +383,8 @@ Proof. destruct Ki; intros ???; simplify_eq/=; auto with f_equal. Qed.
 
 Lemma fill_item_val Ki e :
   is_Some (to_val (fill_item Ki e)) → is_Some (to_val e).
-Proof. intros [v ?]. destruct Ki; simplify_option_eq; eauto.
-  - destruct (to_val e) eqn:?; done.
-  - rewrite to_of_val in H. destruct (to_val e) eqn:?; done.
+Proof. intros [v ?]. destruct Ki; simplify_option_eq; eauto;
+  revert H; do 2 (case_match; last discriminate); done.
 Qed.
 
 Lemma val_stuck e1 σ1 κ e2 σ2 ef :
@@ -410,22 +409,6 @@ Proof.
   - subst. by rewrite to_of_val in H1.
   - subst. by rewrite to_of_val in H2.
   - destruct (IHvl1 vl2); auto. split; f_equal; auto. by apply (inj of_val).
-Qed.
-
-Lemma list_expr_val_eq_inv_with_str vl1 vl2 f1 f2 e1 e2 el1 el2 :
-to_val e1 = None → to_val e2 = None →
-map (λ pair0 : string * val, (pair0.1, of_val pair0.2)) vl1 ++ (f1, e1) :: el1 =
-     map (λ pair0 : string * val, (pair0.1, of_val pair0.2)) vl2 ++ (f2, e2) ::
-     el2 → vl1 = vl2 ∧ f1 = f2 ∧ el1 = el2.
-Proof.
-  revert vl2; induction vl1 as [|? vl1 IHvl1];
-  intros vl2; destruct vl2 as [|? vl2]; intros H1 H2; inversion 1.
-  - done.
-  - subst. by rewrite to_of_val in H1.
-  - subst. by rewrite to_of_val in H2.
-  - destruct (IHvl1 vl2); auto. split; last auto. destruct a, p.
-  f_equal; last auto. simpl in H3; subst. simpl in H4.
-  apply pair_equal_spec; split; [auto | by apply (inj of_val)].
 Qed.
 
 Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :

@@ -283,6 +283,9 @@ Ltac reshape_val e tac :=
   | of_val ?v => v
   | Lit ?l => constr:(LitV l)
   | Rec ?f ?xl ?e => constr:(RecV f xl e)
+  | RecordNil => constr:(RecordVNil)
+  (* record values require recursion to reshape, we use try to catch non-val *)
+  | RecordCons ?l ?e1 ?e2 => try (let v1 := go e1 in let v2 := go e2 in constr:(RecordVCons l v1 v2))
   end in let v := go e in tac v.
 
 Ltac reshape_expr e tac :=
@@ -311,5 +314,7 @@ Ltac reshape_expr e tac :=
   | Free ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (FreeRCtx v1 :: K) e2)
   | Free ?e1 ?e2 => go (FreeLCtx e2 :: K) e1
   | Case ?e ?el => go (CaseCtx el :: K) e
+  | RecordCons ?l ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (RecordConsRCtx l v1 :: K) e2)
+  | RecordCons ?l ?e1 ?e2 => go (RecordConsLCtx l e2 :: K) e1
   end
   in go (@nil ectx_item) e.
