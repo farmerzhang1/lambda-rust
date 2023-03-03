@@ -71,8 +71,6 @@ Section product.
     iSplitL "H1"; by iApply (ty_shr_mono with "H⊑").
   Qed.
 
-  (* this is folder function for records, ty1 should be unit type or a record already *)
-
     Global Instance product2_type_ne n:
     Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) product2.
   Proof. solve_type_proper. Qed.
