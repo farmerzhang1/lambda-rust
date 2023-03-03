@@ -1,8 +1,8 @@
 From iris.proofmode Require Import proofmode.
 From iris.algebra Require Import list numbers.
-From lrust.typing Require Import lft_contexts product.
+From lrust.typing Require Import lft_contexts product programs.
 From lrust.typing Require Export type.
-
+From lrust.lang Require Import notation.
 From iris.prelude Require Import options.
 
 (* see product.v, the proof should pretty much the same *)
@@ -23,8 +23,24 @@ Section record.
       rewrite heap_mapsto_vec_app. iDestruct (ty_size_eq with "H1") as %->.
       iFrame. iExists _, _. by iFrame.
   Qed.
-  Program Definition record2 (p : (string * type)) (ty1 : type) : type :=
-    let (_, ty2) := p in
+  (* FIXME: the RustBelt paper says
+  types in Rust do not just cover a single VALUE:
+  In general, data is laid out in memory
+  and spans multiple locations.
+  However, we have to impose some restrictions 
+  on the lists of values accepted by a type: 
+  we require that every type has a fixed size [τ].size.
+  This size is used to compute 
+  the layout of compound data structures,
+  e.g., for product types.
+  We require that a type only accepts lists whose length matches the size
+  是说，rustbelt的value大小都是1，该怎么办呢！！！
+  不然我会被迫要证明
+    [(l r: v1 :r: v2)%V] = [v1] ++ [v2]
+  而且我们丢失了label的信息
+  *)
+  Program Definition rcons (p : (string * type)) (ty2 : type) : type :=
+    let (l, ty1) := p in
     {| ty_size := ty1.(ty_size) + ty2.(ty_size);
        ty_own tid vl := (∃ vl1 vl2,
          ⌜vl = vl1 ++ vl2⌝ ∗ ty1.(ty_own) tid vl1 ∗ ty2.(ty_own) tid vl2)%I;
@@ -33,15 +49,15 @@ Section record.
           ty2.(ty_shr) κ tid (l +ₗ ty1.(ty_size)))%I
     |}.
   Next Obligation.
-    iIntros (_ ty1 _ ty2 ??) "H".
-    iDestruct "H" as (vl1 vl2 ->) "[H1 H2]".
+    iIntros (_ ty2 l ty1 ??) "H".
+    iDestruct "H" as (v1 v2 ->) "[H1 H2]".
     rewrite app_length. (* without this rewrite, we can't destruct the next equations with -> *)
     iDestruct (ty_size_eq with "H1") as %->.
     iDestruct (ty_size_eq with "H2") as %->.
     done.
   Qed.
   Next Obligation.
-    iIntros (_ ty1 _ ty2 E κ l tid q H) "#Hctx H /= Htok".
+    iIntros (_ ty2 _ ty1 E κ l tid q H) "#Hctx H /= Htok".
     rewrite split_prod_mt.
     (* from full borrow we can create a shared reference *)
     (* but first we need to split the full borrow *)
@@ -52,14 +68,32 @@ Section record.
     iModIntro. iFrame.
   Qed.
   Next Obligation.
-    iIntros (_ ty1 _ ty2 ?? ??) "#H⊑ [H1 H2]".
+    iIntros (_ ty2 _ ty1 ?? ??) "#H⊑ [H1 H2]".
     (* need to shorten lifetime, respectively *)
     iSplit.
     - by iApply (ty1.(ty_shr_mono) with "H⊑").
     - by iApply (ty2.(ty_shr_mono) with "H⊑").
   Qed.
-  (* oh hello, can we hide record2 here it's not really a record *)
-  Definition record := foldr record2 unit0.
-  (* we need to proof that the field names are distinct? *)
-  Definition record_example := record [("x", unit0) ; ("y", unit0); ("z", unit0)].
+  (* oh hello, can we hide rcons here it's not really a record *)
+  Definition record := foldr rcons unit0.
+  Global Instance rcons_proper n l:
+  Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) (λ t1 t2, rcons (l, t1) t2).
+  Proof. solve_type_proper. Qed.
 End record.
+
+Section typing.
+Context `{!typeGS Σ}.
+
+  Lemma type_rcons E L l p1 p2 t1 t2: 
+    ⊢ typed_instruction_ty E L [p1 ◁ t1 ; p2 ◁ t2] (l r: p1 :r: p2) (rcons (l, t1) t2).
+  Proof.
+    iIntros (tid ?) "_ _ $ $ (Hp1 & Hp2 & _)".
+    wp_apply (wp_hasty with "Hp1").
+    iIntros (v1) "_ H1".
+    wp_apply (wp_hasty with "Hp2").
+    iIntros (v2) "_ H2".
+    iApply wp_value.
+    rewrite tctx_interp_singleton tctx_hasty_val.
+    simpl. iExists [v1], [v2]. iFrame.
+  Admitted.
+End typing.
