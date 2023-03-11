@@ -31,48 +31,58 @@ Section typing.
 Context `{!typeGS Σ}.
 
 Definition prod_pre t : type := Π [int; int; box t].
-Definition prod_cont : TypeContractive prod_pre.
+Local Instance prod_cont : TypeContractive prod_pre.
 Proof.
-    intros n p1 p2 Hp.
-    rewrite /prod_pre. f_equiv.
-    f_equiv.
-    repeat f_equiv. apply Hp.
+  intros n p1 p2 Hp.
+  rewrite /prod_pre. f_equiv.
+  f_equiv.
+  repeat f_equiv. apply Hp.
 Qed.
 
-Definition record_proper n ls : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) 
-  (λ ts, record (zip ls ts)).
+Definition prod_pre1 t : type := Π [int; int; box t].
+Local Instance prod_cont1 : TypeContractive prod_pre1.
 Proof.
-  (*
-  If induction_arg is a natural, 
-  then destruct natural behaves like 
-  intros until natural 
-  followed by destruct applied to 
-  the last introduced hypothesis.
-  *)
-  intros ???.
-  (* KEY! *)
-  generalize dependent ls.
-  induction H. (* induction on H, not the other list types *)
-  - reflexivity.
-  - destruct ls.
-    + f_equal.
-    + assert (∀ A B (x : A) (y : B) xs ys, zip (x :: xs) (y :: ys) = (x,y) :: zip xs ys); first done. 
-      do 2 rewrite H1.
-      apply rcons_proper; first apply H. apply IHForall2.
+  intros n p1 p2 Hp.
+  rewrite /prod_pre1. f_equiv.
+  repeat f_equiv. apply Hp.
 Qed.
 
-Definition obj_pre t : type := record [("x", int); ("y", int); ("area", box t)].
-Local Instance  obj_contractive : TypeContractive obj_pre.
+Definition obj_sub E L : subtype E L (type_fixpoint prod_pre) (type_fixpoint prod_pre1).
 Proof.
-    intros n o1 o2 Ho.
-    rewrite /obj_pre.
-    replace ([("x", int); ("y", int); ("area", box o1)]) with (zip ["x"; "y"; "area"] [int; int; box o1]); last done.
-    replace ([("x", int); ("y", int); ("area", box o2)]) with (zip ["x"; "y"; "area"] [int; int; box o2]); last done.
-    apply record_proper.
-    repeat f_equiv.
-    apply Ho.
+  apply fixpoint_mono. intros.
+  apply product_mono. repeat f_equiv. apply H.
+Qed.
+
+Definition obj_pre t := record [("x", int); ("y", int); ("area", box t)].
+Definition obj_pre1 t := record [("x", int); ("y", int); ("area", box t)].
+
+Local Instance obj_contractive : TypeContractive obj_pre.
+Proof.
+  intros n o1 o2 Ho.
+  rewrite /obj_pre.
+  replace ([("x", int); ("y", int); ("area", box o1)]) with (zip ["x"; "y"; "area"] [int; int; box o1]); last done.
+  replace ([("x", int); ("y", int); ("area", box o2)]) with (zip ["x"; "y"; "area"] [int; int; box o2]); last done.
+  apply record_proper. (* well I guess f_equiv can't detect this directly*)
+  repeat f_equiv.
+  apply Ho.
+Qed.
+
+Local Instance obj_contractive1 : TypeContractive obj_pre1.
+Proof.
+  intros n o1 o2 Ho.
+  rewrite /obj_pre1.
+  replace ([("x", int); ("y", int); ("area", box o1)]) with (zip ["x"; "y"; "area"] [int; int; box o1]); last done.
+  replace ([("x", int); ("y", int); ("area", box o2)]) with (zip ["x"; "y"; "area"] [int; int; box o2]); last done.
+  apply record_proper. (* well I guess f_equiv can't detect this directly*)
+  repeat f_equiv.
+  apply Ho.
 Qed.
 
 Definition obj := type_fixpoint obj_pre.
+Definition obj1 := type_fixpoint obj_pre1.
+
+Definition obj_sub E L : subtype E L obj obj1.
+Proof.
+  apply fixpoint_mono. intros. unfold obj_pre, obj_pre1.
 (* TODO *)
 End typing.

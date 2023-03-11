@@ -149,8 +149,8 @@ Proof.
 Qed.
 
 Lemma wp_free E (n:Z) l vl :
-  n = length vl →
-  {{{ ▷ l ↦∗ vl ∗ ▷ †l…(length vl) }}}
+  n = list_ty_size vl →
+  {{{ ▷ l ↦∗ vl ∗ ▷ †l…(list_ty_size vl) }}}
     Free (Lit $ LitInt n) (Lit $ LitLoc l) @ E
   {{{ RET LitV LitPoison; True }}}.
 Proof.
@@ -163,8 +163,8 @@ Proof.
 Qed.
 
 Lemma wp_read_sc E l q v :
-  {{{ ▷ l ↦{q} v }}} Read ScOrd (Lit $ LitLoc l) @ E
-  {{{ RET v; l ↦{q} v }}}.
+  {{{ ▷ l ↦s{q} v }}} Read ScOrd (Lit $ LitLoc l) @ E
+  {{{ RET v; l ↦s{q} v }}}.
 Proof.
   iIntros (?) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1 ? κ κs n) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[m ?].
@@ -174,8 +174,8 @@ Proof.
 Qed.
 
 Lemma wp_read_na E l q v :
-  {{{ ▷ l ↦{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
-  {{{ RET v; l ↦{q} v }}}.
+  {{{ ▷ l ↦s{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
+  {{{ RET v; l ↦s{q} v }}}.
 Proof.
   iIntros (Φ) ">Hv HΦ". iApply wp_lift_head_step; auto. iIntros (σ1 ? κ κs n) "Hσ".
   iMod (heap_read_na with "Hσ Hv") as (m) "(% & Hσ & Hσclose)".
@@ -193,8 +193,8 @@ Qed.
 
 Lemma wp_write_sc E l e v v' :
   IntoVal e v →
-  {{{ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
-  {{{ RET LitV LitPoison; l ↦ v }}}.
+  {{{ ▷ l ↦s v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦s v }}}.
 Proof.
   iIntros (<- Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1 ? κ κs n) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
@@ -206,8 +206,8 @@ Qed.
 
 Lemma wp_write_na E l e v v' :
   IntoVal e v →
-  {{{ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
-  {{{ RET LitV LitPoison; l ↦ v }}}.
+  {{{ ▷ l ↦s v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦s v }}}.
 Proof.
   iIntros (<- Φ) ">Hv HΦ".
   iApply wp_lift_head_step; auto. iIntros (σ1 ? κ κs n) "Hσ".
@@ -225,9 +225,9 @@ Qed.
 
 Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
   IntoVal e2 (LitV lit2) → z1 ≠ zl →
-  {{{ ▷ l ↦{q} LitV (LitInt zl) }}}
+  {{{ ▷ l ↦s{q} LitV (LitInt zl) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
-  {{{ RET LitV $ LitInt 0; l ↦{q} LitV (LitInt zl) }}}.
+  {{{ RET LitV $ LitInt 0; l ↦s{q} LitV (LitInt zl) }}}.
 Proof.
   iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
@@ -239,9 +239,9 @@ Qed.
 
 Lemma wp_cas_suc E l lit1 e2 lit2 :
   IntoVal e2 (LitV lit2) → lit1 ≠ LitPoison →
-  {{{ ▷ l ↦ LitV lit1 }}}
+  {{{ ▷ l ↦s LitV lit1 }}}
     CAS (Lit $ LitLoc l) (Lit lit1) e2 @ E
-  {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
+  {{{ RET LitV (LitInt 1); l ↦s LitV lit2 }}}.
 Proof.
   iIntros (<- ? Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
@@ -254,24 +254,24 @@ Qed.
 
 Lemma wp_cas_int_suc E l z1 e2 lit2 :
   IntoVal e2 (LitV lit2) →
-  {{{ ▷ l ↦ LitV (LitInt z1) }}}
+  {{{ ▷ l ↦s LitV (LitInt z1) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitInt z1) e2 @ E
-  {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
+  {{{ RET LitV (LitInt 1); l ↦s LitV lit2 }}}.
 Proof. intros ?. by apply wp_cas_suc. Qed.
 
 Lemma wp_cas_loc_suc E l l1 e2 lit2 :
   IntoVal e2 (LitV lit2) →
-  {{{ ▷ l ↦ LitV (LitLoc l1) }}}
+  {{{ ▷ l ↦s LitV (LitLoc l1) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
-  {{{ RET LitV (LitInt 1); l ↦ LitV lit2 }}}.
+  {{{ RET LitV (LitInt 1); l ↦s LitV lit2 }}}.
 Proof. intros ?. by apply wp_cas_suc. Qed.
 
 Lemma wp_cas_loc_fail E l q q' q1 l1 v1' e2 lit2 l' vl' :
   IntoVal e2 (LitV lit2) → l1 ≠ l' →
-  {{{ ▷ l ↦{q} LitV (LitLoc l') ∗ ▷ l' ↦{q'} vl' ∗ ▷ l1 ↦{q1} v1' }}}
+  {{{ ▷ l ↦s{q} LitV (LitLoc l') ∗ ▷ l' ↦s{q'} vl' ∗ ▷ l1 ↦s{q1} v1' }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
   {{{ RET LitV (LitInt 0);
-      l ↦{q} LitV (LitLoc l') ∗ l' ↦{q'} vl' ∗ l1 ↦{q1} v1' }}}.
+      l ↦s{q} LitV (LitLoc l') ∗ l' ↦s{q'} vl' ∗ l1 ↦s{q1} v1' }}}.
 Proof.
   iIntros (<- ? Φ) "(>Hl & >Hl' & >Hl1) HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
@@ -285,11 +285,11 @@ Qed.
 
 Lemma wp_cas_loc_nondet E l l1 e2 l2 ll :
   IntoVal e2 (LitV $ LitLoc l2) →
-  {{{ ▷ l ↦ LitV (LitLoc ll) }}}
+  {{{ ▷ l ↦s LitV (LitLoc ll) }}}
     CAS (Lit $ LitLoc l) (Lit $ LitLoc l1) e2 @ E
   {{{ b, RET LitV (lit_of_bool b);
-      if b is true then l ↦ LitV (LitLoc l2)
-      else ⌜l1 ≠ ll⌝ ∗ l ↦ LitV (LitLoc ll) }}}.
+      if b is true then l ↦s LitV (LitLoc l2)
+      else ⌜l1 ≠ ll⌝ ∗ l ↦s LitV (LitLoc ll) }}}.
 Proof.
   iIntros (<- Φ) ">Hv HΦ".
   iApply wp_lift_atomic_head_step_no_fork; auto.
@@ -303,8 +303,8 @@ Proof.
 Qed.
 
 Lemma wp_eq_loc E (l1 : loc) (l2: loc) q1 q2 v1 v2 P Φ :
-  (P -∗ ▷ l1 ↦{q1} v1) →
-  (P -∗ ▷ l2 ↦{q2} v2) →
+  (P -∗ ▷ l1 ↦s{q1} v1) →
+  (P -∗ ▷ l2 ↦s{q2} v2) →
   (P -∗ ▷ Φ (LitV (bool_decide (l1 = l2)))) →
   P -∗ WP BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2)) @ E {{ Φ }}.
 Proof.
@@ -320,7 +320,7 @@ Proof.
     { iPureIntro. repeat eexists. econstructor. eapply BinOpEqFalse. by auto. }
     (* We need to do a little gymnastics here to apply Hne now and strip away a
        ▷ but also have the ↦s. *)
-    iAssert ((▷ ∃ q v, l1 ↦{q} v) ∧ (▷ ∃ q v, l2 ↦{q} v) ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
+    iAssert ((▷ ∃ q v, l1 ↦s{q} v) ∧ (▷ ∃ q v, l2 ↦s{q} v) ∧ ▷ Φ (LitV false))%I with "[HP]" as "HP".
     { iSplit; last iSplit.
       + iExists _, _. by iApply Hl1.
       + iExists _, _. by iApply Hl2.

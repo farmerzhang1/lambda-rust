@@ -41,8 +41,8 @@ Tactic Notation "wp_pure" open_constr(efoc) :=
 
 Lemma tac_wp_eq_loc `{!lrustGS Σ} K Δ Δ' E i1 i2 l1 l2 q1 q2 v1 v2 Φ :
   MaybeIntoLaterNEnvs 1 Δ Δ' →
-  envs_lookup i1 Δ' = Some (false, l1 ↦{q1} v1)%I →
-  envs_lookup i2 Δ' = Some (false, l2 ↦{q2} v2)%I →
+  envs_lookup i1 Δ' = Some (false, l1 ↦s{q1} v1)%I →
+  envs_lookup i2 Δ' = Some (false, l2 ↦s{q2} v2)%I →
   envs_entails Δ' (WP fill K (Lit (bool_decide (l1 = l2))) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (BinOp EqOp (Lit (LitLoc l1)) (Lit (LitLoc l2))) @ E {{ Φ }}).
 Proof.
@@ -115,13 +115,13 @@ Proof.
 Qed.
 
 Lemma tac_wp_free K Δ Δ' Δ'' Δ''' E i1 i2 vl (n : Z) (n' : nat) l Φ :
-  n = length vl →
+  n = list_ty_size vl →
   MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i1 Δ' = Some (false, l ↦∗ vl)%I →
   envs_delete false i1 false Δ' = Δ'' →
   envs_lookup i2 Δ'' = Some (false, †l…n')%I →
   envs_delete false i2 false Δ'' = Δ''' →
-  n' = length vl →
+  n' = list_ty_size vl →
   envs_entails Δ''' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (Free (Lit $ LitInt n) (Lit $ LitLoc l)) @ E {{ Φ }}).
 Proof.
@@ -134,7 +134,7 @@ Qed.
 Lemma tac_wp_read K Δ Δ' E i l q v o Φ :
   o = Na1Ord ∨ o = ScOrd →
   MaybeIntoLaterNEnvs 1 Δ Δ' →
-  envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
+  envs_lookup i Δ' = Some (false, l ↦s{q} v)%I →
   envs_entails Δ' (WP fill K (of_val v) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (Read o (Lit $ LitLoc l)) @ E {{ Φ }}).
 Proof.
@@ -151,8 +151,8 @@ Lemma tac_wp_write K Δ Δ' Δ'' E i l v e v' o Φ :
   IntoVal e v' →
   o = Na1Ord ∨ o = ScOrd →
   MaybeIntoLaterNEnvs 1 Δ Δ' →
-  envs_lookup i Δ' = Some (false, l ↦ v)%I →
-  envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
+  envs_lookup i Δ' = Some (false, l ↦s v)%I →
+  envs_simple_replace i false (Esnoc Enil i (l ↦s v')) Δ' = Some Δ'' →
   envs_entails Δ'' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (Write o (Lit $ LitLoc l) e) @ E {{ Φ }}).
 Proof.
@@ -226,6 +226,7 @@ Tactic Notation "wp_free" :=
   | _ => fail "wp_free: not a 'wp'"
   end.
 
+(* TODO: get wp_read for ↦s, too *)
 Tactic Notation "wp_read" :=
   iStartProof;
   lazymatch goal with

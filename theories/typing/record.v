@@ -27,10 +27,10 @@ Section record.
   types in Rust do not just cover a single VALUE:
   In general, data is laid out in memory
   and spans multiple locations.
-  However, we have to impose some restrictions 
-  on the lists of values accepted by a type: 
+  However, we have to impose some restrictions
+  on the lists of values accepted by a type:
   we require that every type has a fixed size [τ].size.
-  This size is used to compute 
+  This size is used to compute
   the layout of compound data structures,
   e.g., for product types.
   We require that a type only accepts lists whose length matches the size
@@ -79,6 +79,25 @@ Section record.
   Global Instance rcons_proper n l:
   Proper (type_dist2 n ==> type_dist2 n ==> type_dist2 n) (λ t1 t2, rcons (l, t1) t2).
   Proof. solve_type_proper. Qed.
+  Global Instance record_proper n ls : Proper (Forall2 (type_dist2 n) ==> type_dist2 n) 
+    (λ ts, record (zip ls ts)).
+  Proof.
+    (*
+    If induction_arg is a natural, 
+    then `destruct natural` behaves like 
+    intros until natural 
+    followed by destruct applied to 
+    the last introduced hypothesis.
+    *)
+    intros ???.
+    (* KEY! *)
+    generalize dependent ls.
+    induction H; first reflexivity. (* induction on H, not the other list types *)
+    destruct ls; first f_equal.
+    assert (∀ A B (x : A) (y : B) xs ys, zip (x :: xs) (y :: ys) = (x,y) :: zip xs ys); first done. 
+    do 2 rewrite H1.
+    apply rcons_proper; first apply H. apply IHForall2.
+  Qed.
 End record.
 
 Section typing.
@@ -94,6 +113,6 @@ Context `{!typeGS Σ}.
     iIntros (v2) "_ H2".
     iApply wp_value.
     rewrite tctx_interp_singleton tctx_hasty_val.
-    simpl. iExists [v1], [v2]. iFrame.
+    simpl. iExists [v1], [v2]. iFrame. admit.
   Admitted.
 End typing.

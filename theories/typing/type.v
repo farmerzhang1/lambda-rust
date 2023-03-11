@@ -25,7 +25,7 @@ Record type `{!typeGS Σ} :=
 
     ty_shr_persistent κ tid l : Persistent (ty_shr κ tid l);
 
-    ty_size_eq tid vl : ty_own tid vl -∗ ⌜length vl = ty_size⌝;
+    ty_size_eq tid vl : ty_own tid vl -∗ ⌜list_ty_size vl = ty_size⌝;
     (* The mask for starting the sharing does /not/ include the
        namespace N, for allowing more flexibility for the user of
        this type (typically for the [own] type). AFAIK, there is no
@@ -113,9 +113,10 @@ Proof.
       (etrans; [|done]); solve_typing.
 Qed.
 
+(* types of size 1 *)
 Record simple_type `{!typeGS Σ} :=
   { st_own : thread_id → list val → iProp Σ;
-    st_size_eq tid vl : st_own tid vl -∗ ⌜length vl = 1%nat⌝;
+    st_size_eq tid vl : st_own tid vl -∗ ⌜list_ty_size vl = 1%nat⌝;
     st_own_persistent tid vl : Persistent (st_own tid vl) }.
 Global Existing Instance st_own_persistent.
 Global Instance: Params (@st_own) 2 := {}.
@@ -172,7 +173,7 @@ Section ofe.
     (lft -d> thread_id -d> loc -d> iPropO Σ).
   Let P (x : T) : Prop :=
     (∀ κ tid l, Persistent (x.2 κ tid l)) ∧
-    (∀ tid vl, x.1.2 tid vl -∗ ⌜length vl = x.1.1⌝) ∧
+    (∀ tid vl, x.1.2 tid vl -∗ ⌜list_ty_size vl = x.1.1⌝) ∧
     (∀ E κ l tid q, ↑lftN ⊆ E →
       lft_ctx -∗ &{κ} (l ↦∗: λ vs, x.1.2 tid vs) -∗
       q.[κ] ={E}=∗ x.2 κ tid l ∗ q.[κ]) ∧
@@ -495,8 +496,12 @@ Section type.
     iIntros "Htok2 Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
     iDestruct ("Htok" with "Htok2") as "$".
     iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
-    { iNext. iDestruct (st_size_eq with "Hown") as %->.
-      iDestruct (st_size_eq with "Hown'") as %->. done. }
+    { iNext.
+      iDestruct (st_size_eq with "Hown") as "%H1".
+      iDestruct (st_size_eq with "Hown'") as "%H2".
+      apply length1_size1 in H1, H2. rewrite H1 H2. done. }
+    (* FIXME: the mapsto definition needs rewriting, 
+    now length of list no longer represents the size of the list vals. *)
     iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp.div_2.
     iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
   Qed.
@@ -534,6 +539,9 @@ Section type.
 End type.
 
 (** iProp-level type inclusion / equality. *)
+(* Type inclusion and equality are the same??? nonono, incl oneway, eq two-way
+  should we change this to an ADT and add another constructor?
+*)
 Definition type_incl `{!typeGS Σ} (ty1 ty2 : type) : iProp Σ :=
     (⌜ty1.(ty_size) = ty2.(ty_size)⌝ ∗
      (□ ∀ tid vl, ty1.(ty_own) tid vl -∗ ty2.(ty_own) tid vl) ∗
@@ -792,7 +800,7 @@ End subtyping.
 
 Section type_util.
   Context `{!typeGS Σ}.
-
+  (* if we use the flattened points-to assertion, this lemma can't hold *)
   Lemma heap_mapsto_ty_own l ty tid :
     l ↦∗: ty_own ty tid ⊣⊢ ∃ (vl : vec val ty.(ty_size)), l ↦∗ vl ∗ ty_own ty tid vl.
   Proof.
