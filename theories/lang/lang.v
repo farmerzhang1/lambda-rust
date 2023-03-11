@@ -74,6 +74,36 @@ Inductive val :=
 | RecordVNil
 | RecordVCons (l : string) (v1 v2 : val).
 
+Fixpoint val_size (v : val) : nat := match v with 
+  | LitV _ => 1
+  | RecV _ _ _ => 1
+  | RecordVNil => 1
+  | RecordVCons _ v1 v2 => val_size v1 + val_size v2
+end.
+
+Lemma val_gt1 v : val_size v >= 1%nat.
+Proof.
+  induction v; try done.
+  simpl. lia.
+Qed.
+Definition list_ty_size := sum_list ∘ map val_size.
+Lemma lty_cons v vl : list_ty_size (v :: vl) = (val_size v + list_ty_size vl)%nat.
+Proof. done. Qed.
+Lemma lty_eq0_emp vl : list_ty_size vl = 0%nat → vl = [].
+Proof.
+  destruct vl; first done.
+  assert (list_ty_size (v :: vl) >= 1%nat). { unfold list_ty_size; simpl. 
+  assert (val_size v >= 1%nat); first apply val_gt1. lia. }
+  intros. lia.
+Qed.
+
+Lemma length1_size1 vl : list_ty_size vl = 1%nat → length vl = 1%nat.
+Proof.
+  destruct vl as [ |]; first discriminate; rewrite lty_cons; intros.
+  - assert (list_ty_size vl = 0%nat). { assert (val_size v >= 1%nat); first apply val_gt1. lia. }
+  apply lty_eq0_emp in H0; subst; done.
+Qed.
+
 Bind Scope val_scope with val.
 
 Fixpoint of_val (v : val) : expr :=
