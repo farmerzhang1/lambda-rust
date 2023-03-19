@@ -2,7 +2,6 @@ From iris.program_logic Require Export language ectx_language ectxi_language.
 From stdpp Require Export strings binders.
 From stdpp Require Import gmap.
 From iris.prelude Require Import options.
-
 Global Open Scope Z_scope.
 
 (** Expressions and vals. *)
@@ -79,6 +78,16 @@ Fixpoint val_size (v : val) : nat := match v with
   | RecV _ _ _ => 1
   | RecordVNil => 1
   | RecordVCons _ v1 v2 => val_size v1 + val_size v2
+end.
+
+Fixpoint flattenv v := match v with
+| RecordVCons l v1 v2 => flattenv v1 ++ flattenv v2
+| v => [v]
+end.
+
+Fixpoint flatten vl := match vl with
+| [] => []
+| v :: vl => flattenv v ++ flatten vl
 end.
 
 Lemma val_gt1 v : val_size v >= 1%nat.
@@ -285,7 +294,16 @@ Inductive bin_op_eval (σ : state) : bin_op → base_lit → base_lit → base_l
 
 Definition stuck_term := App (Lit $ LitInt 0) [].
 
-(* TODO: add record reduction steps *)
+Fixpoint write_vals (σ : state) l lk vs := match vs with
+  | [] => σ
+  | v :: vs => {[l := (lk, v)]} ∪ write_vals σ (l +ₗ 1) lk vs
+end.
+
+Definition val_in_mem (σ : state) l lk v := ∀ (k : nat) x, flattenv v !! k = Some x → σ !! (l +ₗ k) = Some (lk, x).
+
+Definition write_val σ l lk v := write_vals σ l lk (flattenv v).
+
+(* TODO: adapt read/write for compound values *)
 Inductive head_step : expr → state → list Empty_set → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
     bin_op_eval σ op l1 l2 l' →
@@ -296,40 +314,43 @@ Inductive head_step : expr → state → list Empty_set → expr → state → l
     subst_l (f::xl) (Rec f xl e :: el) e = Some e' →
     head_step (App (Rec f xl e) el) σ [] e' σ []
 | ReadScS l n v σ:
-    σ !! l = Some (RSt n, v) →
+    val_in_mem σ l (RSt n) v →
     head_step (Read ScOrd (Lit $ LitLoc l)) σ [] (of_val v) σ []
 | ReadNa1S l n v σ:
-    σ !! l = Some (RSt n, v) →
+    val_in_mem σ l (RSt n) v →
     head_step (Read Na1Ord (Lit $ LitLoc l)) σ
               []
-              (Read Na2Ord (Lit $ LitLoc l)) (<[l:=(RSt $ S n, v)]>σ)
+              (Read Na2Ord (Lit $ LitLoc l)) (write_val σ l (RSt $ S n) v)
               []
 | ReadNa2S l n v σ:
-    σ !! l = Some (RSt $ S n, v) →
+    val_in_mem σ l (RSt $ S n) v →
     head_step (Read Na2Ord (Lit $ LitLoc l)) σ
               []
-              (of_val v) (<[l:=(RSt n, v)]>σ)
+              (of_val v) (write_val σ l (RSt n) v)
               []
 | WriteScS l e v v' σ:
     to_val e = Some v →
-    σ !! l = Some (RSt 0, v') →
+    val_in_mem σ l (RSt 0) v' →
+    val_size v = val_size v' →
     head_step (Write ScOrd (Lit $ LitLoc l) e) σ
               []
-              (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
+              (Lit LitPoison) (write_val σ l (RSt 0) v')
               []
 | WriteNa1S l e v v' σ:
     to_val e = Some v →
-    σ !! l = Some (RSt 0, v') →
+    val_in_mem σ l (RSt 0) v' →
+    val_size v = val_size v' →
     head_step (Write Na1Ord (Lit $ LitLoc l) e) σ
               []
-              (Write Na2Ord (Lit $ LitLoc l) e) (<[l:=(WSt, v')]>σ)
+              (Write Na2Ord (Lit $ LitLoc l) e) (write_val σ l WSt v')
               []
 | WriteNa2S l e v v' σ:
     to_val e = Some v →
-    σ !! l = Some (WSt, v') →
+    val_in_mem σ l WSt v' →
+    val_size v = val_size v' →
     head_step (Write Na2Ord (Lit $ LitLoc l) e) σ
               []
-              (Lit LitPoison) (<[l:=(RSt 0, v)]>σ)
+              (Lit LitPoison) (write_val σ l (RSt 0) v')
               []
 | CasFailS l n e1 lit1 e2 lit2 litl σ :
     to_val e1 = Some $ LitV lit1 → to_val e2 = Some $ LitV lit2 →
