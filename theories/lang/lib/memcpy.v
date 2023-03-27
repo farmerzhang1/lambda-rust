@@ -19,7 +19,7 @@ Notation "e1 <-{ n ',Σ' i } ! e2" :=
   (at level 80, n, i at next level,
    format "e1  <-{ n ,Σ  i }  ! e2") : expr_scope.
 
-Lemma wp_memcpy `{!lrustGS Σ} E l1 l2 vl1 vl2 q (n : Z):
+Lemma wp_memcpy_s `{!lrustGS Σ} E l1 l2 vl1 vl2 q (n : Z):
   Z.of_nat (length vl1) = n → Z.of_nat (length vl2) = n →
   {{{ l1 ↦∗s vl1 ∗ l2 ↦∗s{q} vl2 }}}
     #l1 <-{n} !#l2 @ E
@@ -33,6 +33,19 @@ Proof.
     revert Hvl1 Hvl2. intros [= Hvl1] [= Hvl2]; rewrite !heap_mapsto_vec_cons_s. subst n.
     iDestruct "Hl1" as "[Hv1 Hl1]". iDestruct "Hl2" as "[Hv2 Hl2]".
     Local Opaque Zminus.
-    wp_read; wp_write. do 3 wp_op. iApply ("IH" with "[%] [%] Hl1 Hl2"); [lia..|].
+    wp_read_s. wp_write_s. do 3 wp_op. iApply ("IH" with "[%] [%] Hl1 Hl2"); [lia..|].
     iIntros "!> [Hl1 Hl2]"; iApply "HΦ"; by iFrame.
+Qed.
+
+Lemma wp_memcpy `{!lrustGS Σ} E l1 l2 vl1 vl2 q (n : Z):
+  Z.of_nat (list_ty_size vl1) = n → Z.of_nat (list_ty_size vl2) = n →
+  {{{ l1 ↦∗ vl1 ∗ l2 ↦∗{q} vl2 }}}
+    #l1 <-{n} !#l2 @ E
+  {{{ RET #☠; l1 ↦∗ vl2 ∗ l2 ↦∗{q} vl2 }}}.
+Proof.
+  iIntros (Hvl1 Hvl2 Φ) "Hl HΦ".
+  rewrite -!heap_mapsto_vec_eq.
+  rewrite -flatten_size in Hvl1.
+  rewrite -flatten_size in Hvl2.
+  iApply (wp_memcpy_s with "[Hl]"); [apply Hvl1 | apply Hvl2 | iApply "Hl" | iApply "HΦ"].
 Qed.

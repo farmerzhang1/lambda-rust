@@ -46,14 +46,6 @@ Section definitions.
   Definition heap_mapsto_simple := unseal heap_mapsto_simple_aux.
   Definition heap_mapsto_simple_eq : @heap_mapsto_simple = @heap_mapsto_simple_def :=
     seal_eq heap_mapsto_simple_aux.
-  Fixpoint flattenv v := match v with
-    | RecordVCons l v1 v2 => flattenv v1 ++ flattenv v2
-    | v => [v]
-  end.
-  Fixpoint flatten vl := match vl with
-    | [] => []
-    | v :: vl => flattenv v ++ flatten vl
-  end.
   Definition heap_mapsto (l : loc) (q : Qp) (v: val) : iProp Σ :=
     ([∗ list] i ↦ v ∈ (flattenv v), heap_mapsto_simple (l +ₗ i) q v).
   Definition heap_mapsto_vec_simple l q vl : iProp Σ :=
@@ -214,27 +206,68 @@ Proof. apply: frame_fractional. Qed.
     rewrite singleton_op -pair_op singleton_valid=> -[? /to_agree_op_inv_L->]; eauto.
   Qed.
 
+  Lemma heap_mapsto_val_eq l q v : val_size v = 1%nat → l ↦s{q} v ⊣⊢ l ↦{q} v.
+  Proof.
+    destruct v; simpl; last
+    (
+      assert (val_size v1 >= 1%nat) by apply val_gt1;
+      assert (val_size v2 >= 1%nat) by apply val_gt1;
+      intros; exfalso; lia
+    );
+    intros _; by rewrite /heap_mapsto /= shift_loc_0 sep_True.
+  Qed.
+
+  Lemma heap_mapsto_simple_agree l q1 q2 v1 v2 : val_size v1 = 1%nat → val_size v2 = 1%nat → l ↦{q1} v1 ∗ l ↦{q2} v2 ⊢ ⌜v1 = v2⌝.
+  Proof.
+    intros.
+    rewrite -!heap_mapsto_val_eq; [ | done | done].
+    by rewrite heap_mapsto_agree.
+  Qed.
+
+  Lemma heap_mapsto_flatten_agree l q1 q2 v1 v2 : val_size v1 = val_size v2 → l ↦{q1} v1 ∗ l ↦{q2} v2 -∗ ⌜flattenv v1 = flattenv v2⌝.
+  Proof.
+    rewrite /heap_mapsto -!lty_size_singleton -!flatten_size -!flatten_singleton.
+    iIntros (?) "H".  
+    rewrite -big_sepL_sep_zip; last apply H.
+    setoid_rewrite heap_mapsto_agree.
+    iDestruct (big_sepL_pure with "H") as %?. iPureIntro.
+    assert (∀ (i : nat) (x y : val), flatten [v1] !! i = Some x → flatten [v2] !! i = Some y → x = y).
+    - intros ?????.
+      remember (x, y) as z.
+      assert (∃ (x y : val), z = (x, y) ∧ flatten [v1] !! i = Some x ∧ flatten [v2] !! i = Some y) by eauto.
+      rewrite -lookup_zip_with_Some in H3.
+      apply H0 in H3. subst. auto.
+    - assert (length (flatten [v1]) = length (flatten [v2]) ∧ ∀ (i : nat) (x y : val),
+    flatten [v1] !! i = Some x → flatten [v2] !! i = Some y → x = y) by auto. 
+    rewrite -Forall2_same_length_lookup in H2.
+    (* COOL!!! a pointer can be: Spitters/van der Weegen, 2011 *)
+    apply leibniz_equiv, equiv_Forall2, H2.
+  Qed.
+
   Lemma heap_mapsto_vec_eq l q vl : l ↦∗s{q} (flatten vl) ⊣⊢ l ↦∗{q} vl.
   Proof.
     by rewrite /heap_mapsto_vec /heap_mapsto_vec_simple.
   Qed.
 
+  Lemma heap_mapsto_vec_idemp l q vl : l ↦∗{q} vl ⊣⊢ l ↦∗{q} (flatten vl).
+  Proof.
+    by rewrite /heap_mapsto_vec /heap_mapsto_vec_simple flatten_idemp.
+  Qed.
+
+  Lemma heap_mapsto_val_idemp l q v : l ↦∗{q} [v] ⊣⊢ l ↦∗{q} (flattenv v).
+  Proof.
+    rewrite /heap_mapsto_vec -flatten_singleton.
+    by rewrite flatten_idemp.
+  Qed.
+
+  Lemma heap_mapsto_vec_agree l q vl vl' : flatten vl = flatten vl' → l ↦∗{q} vl ⊣⊢ l ↦∗{q} vl'.
+  Proof.
+    rewrite /heap_mapsto_vec.
+    by destruct 1.
+  Qed.
+
   Lemma heap_mapsto_vec_nil l q : l ↦∗{q} [] ⊣⊢ True.
   Proof. by rewrite /heap_mapsto_vec. Qed.
-
-  Lemma flatten_dist vl1 vl2 : flatten (vl1 ++ vl2) = flatten vl1 ++ flatten vl2.
-  Proof.
-    induction vl1; auto.
-    rewrite <-app_comm_cons.
-    simpl. rewrite <-app_assoc. f_equiv. apply IHvl1.
-  Qed.
-
-  Lemma flatten_size vl : length (flatten vl) = list_ty_size vl.
-  Proof.
-    induction vl; auto. simpl. rewrite lty_cons.
-    rewrite app_length IHvl. f_equal.
-    induction a; try done. simpl. rewrite app_length. naive_solver.
-  Qed.
 
   Lemma heap_mapsto_vec_app l q vl1 vl2 :
     l ↦∗{q} (vl1 ++ vl2) ⊣⊢ l ↦∗{q} vl1 ∗ (l +ₗ list_ty_size vl1) ↦∗{q} vl2.
@@ -248,9 +281,7 @@ Proof. apply: frame_fractional. Qed.
   Proof.
     by rewrite /heap_mapsto_vec /flatten /heap_mapsto app_nil_r. 
   Qed.
-  Lemma lty_size_singleton v : list_ty_size [v] = val_size v.
-    Proof. by rewrite /list_ty_size /=. 
-  Qed.
+
   Lemma heap_mapsto_vec_cons l q v vl:
     l ↦∗{q} (v :: vl) ⊣⊢ l ↦{q} v ∗ (l +ₗ val_size v) ↦∗{q} vl.
   Proof.
@@ -276,20 +307,7 @@ Proof. apply: frame_fractional. Qed.
   Proof.
     by rewrite (heap_mapsto_vec_app_s l q [v] vl) heap_mapsto_vec_singleton_s.
   Qed.
-  Lemma flattenv_noemp v : flattenv v ≠ [].
-  Proof.
-    induction v; try done. simpl. intro H.
-    by destruct (app_eq_nil _ _ H).
-  Qed.
-  Lemma flatten_emp vl : [] = flatten vl ↔ vl = [].
-  Proof.
-    assert (∀ v, flattenv v ≠ []) by apply flattenv_noemp.
-    split.
-    - rewrite /flatten. destruct vl; first done. intros. symmetry in H0. 
-      destruct (app_eq_nil _ _ H0).
-      destruct (H v). done.
-    - intros. by rewrite /flatten H0.
-  Qed.
+
   (* it's also very hard adapting the following lemma 
     I know! I can keep the original mapsto-vec and the related lemmas
   *)
@@ -627,6 +645,31 @@ Proof. apply: frame_fractional. Qed.
     destruct ls, ls''; rewrite ?Nat.add_0_r; naive_solver.
   Qed.
 
+  (* Lemma heap_mapsto_lookup_persistent σ ls q : ∀ l v, Persistent (heap_mapsto_lookup  σ l ls q v). *)
+  (* I think I need to proof something about compound value read/writes,
+  this lemma should hold
+  I want to add some helper lemmas for big ops
+  like P -> [* list] P
+  and [*list] (P -> Q) -> [* list] P -> [* list] Q, can we do this?
+  ok, so I had a look around iris files, and they have a bunch of these lemmas in iris/bi/big_op.v, how about big_sepL_wand
+  oh! own heap_name ... is not persistent! so we can't apply it in every item of the list
+  thus we lose the hypothesis about own when introducing the persistent modality
+  *)
+  Lemma heap_mapsto_lookup_big σ l ls q v :
+    ([∗ list] _ ∈ (flattenv v), own heap_name (● to_heap σ)) -∗
+    ([∗ list] i ↦ v ∈ (flattenv v), own heap_name (◯ {[ (l +ₗ i) := (q, to_lock_stateR ls, to_agree v) ]})) -∗
+    ([∗ list] i ↦ v ∈ (flattenv v), ⌜∃ n' : nat,
+      σ !! (l +ₗ i) = Some (match ls with RSt n => RSt (n+n') | WSt => WSt end, v)⌝).
+  Proof.
+    iIntros "Hl● Hl◯".
+    iApply (big_sepL_wand with "Hl◯").
+    iApply (big_sepL_wand with "Hl●").
+    iApply big_sepL_intro.
+    iModIntro.
+    iIntros (??) "_".
+    iApply heap_mapsto_lookup.
+  Qed.
+
   Lemma heap_read_vs σ n1 n2 nf l q v:
     σ !! l = Some (RSt (n1 + nf), v) →
     own heap_name (● to_heap σ) -∗ heap_mapsto_st (RSt n1) l q v
@@ -639,13 +682,40 @@ Proof. apply: frame_fractional. Qed.
     apply prod_local_update_1, prod_local_update_2, csum_local_update_r.
     apply nat_local_update; lia.
   Qed.
-  (* how to change? *)
+
   Lemma heap_read σ l q v :
     heap_ctx σ -∗ l ↦s{q} v -∗ ∃ n, ⌜σ !! l = Some (RSt n, v)⌝.
   Proof.
     iDestruct 1 as (hF) "(Hσ & HhF & REL)". iIntros "Hmt".
     rewrite heap_mapsto_simple_eq.
     iDestruct (heap_mapsto_lookup with "Hσ Hmt") as %[n Hσl]; eauto.
+  Qed.
+
+  (*
+    for the nth element in the flattened value, heap lookup should find it
+    is heap_ctx persistent? no.
+    let's try to prove this anyway
+    I can use the original heap_read? maybe
+    can we get heap_ctx updated over the location l?
+    FIXME: I can't get individual piece of p-t assertion from the big one: [∗ list] (l +ₗ k) ↦s{q} x
+  *)
+  Lemma big_opL_mapsto l q v : l ↦{q} v -∗ ∀ (k : nat) x, ⌜flattenv v !! k = Some x⌝ -∗
+    (l +ₗ k) ↦s{q} x.
+  Proof.
+    iIntros "Hl" (k x) "%H".
+    by iApply (big_sepL_lookup with "Hl").
+  Qed.
+
+  Lemma heap_read' σ l q v :
+    heap_ctx σ -∗
+    l ↦{q} v -∗
+    ∀ (k : nat) x, ⌜(flattenv v) !! k = Some x → ∃ (n : nat), σ !! (l +ₗ k) = Some (RSt n, x)⌝.
+  Proof.
+    iIntros "Hctx Hl" (k x) "%H".
+    iDestruct (big_opL_mapsto with "Hl") as "Hl".
+    iDestruct ("Hl" $! k x H) as "Hl".
+    iDestruct (heap_read with "Hctx Hl") as (n) "Hr".
+    by iExists n.
   Qed.
 
   Lemma heap_read_1 σ l v :

@@ -168,30 +168,79 @@ Lemma wp_read_sc E l q v :
 Proof.
   iIntros (?) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1 ? κ κs n) "Hσ". iDestruct (heap_read with "Hσ Hv") as %[m ?].
+  assert (val_in_mem σ1 l (RSt m) v) by admit.
   iModIntro; iSplit; first by eauto.
-  iNext; iIntros (v2 σ2 efs Hstep) "_"; inv_head_step.
+  (* - iPureIntro. rewrite /head_reducible. exists [], (of_val v), σ1, []. eapply ReadScS, H0. *)
+  iNext; iIntros (v2 σ2 efs Hstep) "_".
+  (* I get (val_in_mem σ1 l lk v2) from inversion Hstep, but *)
+  (* inversion Hstep. subst.
+  simplify_map_eq. *)
+  inv_head_step.
+  assert (v = v0) by admit. rewrite H1.
   iModIntro; iSplit=> //. iFrame. by iApply "HΦ".
-Qed.
+Admitted.
 
-Lemma wp_read_na E l q v :
+Lemma wp_read_sc' E l q v :
+  {{{ ▷ l ↦{q} v }}} Read ScOrd (Lit $ LitLoc l) @ E
+  {{{ RET v; l ↦{q} v }}}.
+Proof.
+  iIntros (?) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
+  iIntros (σ1 ? κ κs n) "Hσ".
+  iDestruct (heap_read' with "Hσ Hv") as %?.
+  (* needs a proof about reducibility, but changing that is too difficult,
+     so I'm thinking about tricking coq (and ourselves) with part of the proof
+     FIXME: well looks like we have to add another definition about reduction,
+     or the value we end up proving is the first part of the flattened val.
+  *)
+  iModIntro; iSplit.
+  - iPureIntro. rewrite /head_reducible.
+    exists [], (of_val v), σ1, []. eapply ReadScS.
+    rewrite /val_in_mem. (* can val_in_mem use an existential in lock_state? I don't think so *)
+    intros ???.
+    destruct (H k x) as [m ?]; first apply H0. admit.
+    (* apply H1. *)
+  - iNext; iIntros (v2 σ2 efs Hstep) "_". inv_head_step.
+    iModIntro; iSplit=> //. iFrame. admit.
+    (* by iApply "HΦ". *)
+Admitted.
+
+Lemma wp_read_na E l q v : {{{ ▷ l ↦{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
+{{{ RET v; l ↦{q} v }}}.
+Proof. admit. Admitted.
+
+Lemma wp_read_na_s E l q v :
   {{{ ▷ l ↦s{q} v }}} Read Na1Ord (Lit $ LitLoc l) @ E
   {{{ RET v; l ↦s{q} v }}}.
 Proof.
   iIntros (Φ) ">Hv HΦ". iApply wp_lift_head_step; auto. iIntros (σ1 ? κ κs n) "Hσ".
   iMod (heap_read_na with "Hσ Hv") as (m) "(% & Hσ & Hσclose)".
   iMod (fupd_mask_subseteq ∅) as "Hclose"; first set_solver.
+  assert (val_in_mem σ1 l (RSt m) v) by admit.
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep) "_"; inv_head_step. iMod "Hclose" as "_".
-  iModIntro. iFrame "Hσ". iSplit; last done.
-  clear dependent σ1 n.
+  iModIntro.
+  iAssert (heap_ctx (write_val σ1 l (RSt (S n0)) v0)) as "H'"; first admit.
+  iFrame "H'".
+  iSplit; last done.
+  iClear "Hσ".
+Admitted.
+  (* clear dependent σ1 n.
   iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1 ? κ' κs' n') "Hσ". iMod ("Hσclose" with "Hσ") as (n) "(% & Hσ & Hv)".
   iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep) "_ !>"; inv_head_step.
   iFrame "Hσ". iSplit; [done|]. by iApply "HΦ".
-Qed.
+Qed. *)
 
+(* FIXME: just found that value to be written need to
+  have the same size as the stored one, change that later *)
 Lemma wp_write_sc E l e v v' :
+  IntoVal e v →
+  {{{ ▷ l ↦ v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦ v }}}.
+Proof. admit. Admitted.
+
+Lemma wp_write_sc_s E l e v v' :
   IntoVal e v →
   {{{ ▷ l ↦s v' }}} Write ScOrd (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦s v }}}.
@@ -199,12 +248,32 @@ Proof.
   iIntros (<- Φ) ">Hv HΦ". iApply wp_lift_atomic_head_step_no_fork; auto.
   iIntros (σ1 ? κ κs n) "Hσ". iDestruct (heap_read_1 with "Hσ Hv") as %?.
   iMod (heap_write _ _ _  v with "Hσ Hv") as "[Hσ Hv]".
-  iModIntro; iSplit; first by eauto.
+Admitted.
+  (* iModIntro; iSplit; first by eauto.
   iNext; iIntros (v2 σ2 efs Hstep) "_"; inv_head_step.
   iModIntro; iSplit=> //. iFrame. by iApply "HΦ".
-Qed.
+Qed. *)
 
 Lemma wp_write_na E l e v v' :
+  IntoVal e v →
+  {{{ ▷ l ↦ v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦ v }}}.
+Proof. admit. Admitted.
+
+Lemma wp_write_sc_vec E l e v vl :
+  IntoVal e v → val_size v = list_ty_size vl →
+  {{{ ▷ l ↦∗ vl }}} Write ScOrd (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦ v }}}.
+Proof. admit. Admitted.
+
+
+Lemma wp_write_na_vec E l e v vl :
+  IntoVal e v → val_size v = list_ty_size vl →
+  {{{ ▷ l ↦∗ vl }}} Write Na1Ord (Lit $ LitLoc l) e @ E
+  {{{ RET LitV LitPoison; l ↦ v }}}.
+Proof. admit. Admitted.
+
+Lemma wp_write_na_s E l e v v' :
   IntoVal e v →
   {{{ ▷ l ↦s v' }}} Write Na1Ord (Lit $ LitLoc l) e @ E
   {{{ RET LitV LitPoison; l ↦s v }}}.
@@ -213,7 +282,8 @@ Proof.
   iApply wp_lift_head_step; auto. iIntros (σ1 ? κ κs n) "Hσ".
   iMod (heap_write_na with "Hσ Hv") as "(% & Hσ & Hσclose)".
   iMod (fupd_mask_subseteq ∅) as "Hclose"; first set_solver.
-  iModIntro; iSplit; first by eauto.
+Admitted.
+  (* iModIntro; iSplit; first by eauto.
   iNext; iIntros (e2 σ2 efs Hstep) "_"; inv_head_step. iMod "Hclose" as "_".
   iModIntro. iFrame "Hσ". iSplit; last done.
   clear dependent σ1. iApply wp_lift_atomic_head_step_no_fork; auto.
@@ -222,7 +292,7 @@ Proof.
   iNext; iIntros (e2 σ2 efs Hstep) "_ !>"; inv_head_step.
   iFrame "Hσ". iSplit; [done|]. by iApply "HΦ".
 Qed.
-
+ *)
 Lemma wp_cas_int_fail E l q z1 e2 lit2 zl :
   IntoVal e2 (LitV lit2) → z1 ≠ zl →
   {{{ ▷ l ↦s{q} LitV (LitInt zl) }}}

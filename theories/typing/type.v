@@ -495,15 +495,16 @@ Section type.
     iSplitL "Hmt1"; first by auto with iFrame.
     iIntros "Htok2 Hmt1". iDestruct "Hmt1" as (vl') "[Hmt1 #Hown']".
     iDestruct ("Htok" with "Htok2") as "$".
-    iAssert (▷ ⌜length vl = length vl'⌝)%I as ">%".
+    iAssert (▷ ⌜list_ty_size vl = list_ty_size vl'⌝)%I as ">%".
     { iNext.
       iDestruct (st_size_eq with "Hown") as "%H1".
       iDestruct (st_size_eq with "Hown'") as "%H2".
-      apply length1_size1 in H1, H2. rewrite H1 H2. done. }
-    (* FIXME: the mapsto definition needs rewriting, 
-    now length of list no longer represents the size of the list vals. *)
+      (* apply length1_size1 in H1, H2.  *)
+      rewrite H1 H2. done. }
     iCombine "Hmt1" "Hmt2" as "Hmt". rewrite heap_mapsto_vec_op // Qp.div_2.
-    iDestruct "Hmt" as "[>% Hmt]". subst. by iApply "Hclose".
+    iDestruct "Hmt" as "[>% Hmt]".
+    rewrite (heap_mapsto_vec_agree l q' vl' vl H1).
+    by iApply "Hclose".
   Qed.
 
   (** Send and Sync types *)
@@ -802,13 +803,14 @@ Section type_util.
   Context `{!typeGS Σ}.
   (* if we use the flattened points-to assertion, this lemma can't hold *)
   Lemma heap_mapsto_ty_own l ty tid :
-    l ↦∗: ty_own ty tid ⊣⊢ ∃ (vl : vec val ty.(ty_size)), l ↦∗ vl ∗ ty_own ty tid vl.
+    l ↦∗: ty_own ty tid ⊣⊢ ∃ (vl : vec val ty.(ty_size)) (vl' : list val), ⌜ vec_to_list vl = flatten vl'⌝ ∗ l ↦∗ vl' ∗ ty_own ty tid vl'.
   Proof.
     iSplit.
     - iIntros "H". iDestruct "H" as (vl) "[Hl Hown]".
       iDestruct (ty_size_eq with "Hown") as %<-.
-      iExists (list_to_vec vl). rewrite vec_to_list_to_vec. iFrame.
-    - iIntros "H". iDestruct "H" as (vl) "[Hl Hown]". eauto with iFrame.
+      rewrite -flatten_size.
+      iExists (list_to_vec (flatten vl)), vl. rewrite vec_to_list_to_vec. by iFrame.
+    - iIntros "H". iDestruct "H" as (vl vl') "(Hvl & Hl & Hown)". eauto with iFrame.
   Qed.
 
 End type_util.

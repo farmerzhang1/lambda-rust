@@ -131,7 +131,7 @@ Proof.
   do 2 (rewrite envs_lookup_sound //). by rewrite HΔ True_emp emp_wand -assoc.
 Qed.
 
-Lemma tac_wp_read K Δ Δ' E i l q v o Φ :
+Lemma tac_wp_read_s K Δ Δ' E i l q v o Φ :
   o = Na1Ord ∨ o = ScOrd →
   MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦s{q} v)%I →
@@ -139,7 +139,7 @@ Lemma tac_wp_read K Δ Δ' E i l q v o Φ :
   envs_entails Δ (WP fill K (Read o (Lit $ LitLoc l)) @ E {{ Φ }}).
 Proof.
   rewrite envs_entails_unseal; intros [->| ->] ???.
-  - rewrite -wp_bind. eapply wand_apply; first exact:wp_read_na.
+  - rewrite -wp_bind. eapply wand_apply; first exact:wp_read_na_s.
     rewrite into_laterN_env_sound -later_sep envs_lookup_split //; simpl.
     by apply later_mono, sep_mono_r, wand_mono.
   - rewrite -wp_bind. eapply wand_apply; first exact:wp_read_sc.
@@ -147,12 +147,46 @@ Proof.
     by apply later_mono, sep_mono_r, wand_mono.
 Qed.
 
-Lemma tac_wp_write K Δ Δ' Δ'' E i l v e v' o Φ :
+Lemma tac_wp_read K Δ Δ' E i l q v o Φ :
+  o = Na1Ord ∨ o = ScOrd →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
+  envs_lookup i Δ' = Some (false, l ↦{q} v)%I →
+  envs_entails Δ' (WP fill K (of_val v) @ E {{ Φ }}) →
+  envs_entails Δ (WP fill K (Read o (Lit $ LitLoc l)) @ E {{ Φ }}).
+Proof.
+  rewrite envs_entails_unseal; intros [->| ->] ???.
+  - rewrite -wp_bind. eapply wand_apply; first exact:wp_read_na.
+    rewrite into_laterN_env_sound -later_sep envs_lookup_split //; simpl.
+    by apply later_mono, sep_mono_r, wand_mono.
+  - rewrite -wp_bind. eapply wand_apply; first exact:wp_read_sc'.
+    rewrite into_laterN_env_sound -later_sep envs_lookup_split //; simpl.
+    by apply later_mono, sep_mono_r, wand_mono.
+Qed.
+
+Lemma tac_wp_write_s K Δ Δ' Δ'' E i l v e v' o Φ :
   IntoVal e v' →
   o = Na1Ord ∨ o = ScOrd →
   MaybeIntoLaterNEnvs 1 Δ Δ' →
   envs_lookup i Δ' = Some (false, l ↦s v)%I →
   envs_simple_replace i false (Esnoc Enil i (l ↦s v')) Δ' = Some Δ'' →
+  envs_entails Δ'' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
+  envs_entails Δ (WP fill K (Write o (Lit $ LitLoc l) e) @ E {{ Φ }}).
+Proof.
+  rewrite envs_entails_unseal; intros ? [->| ->] ????.
+  - rewrite -wp_bind. eapply wand_apply; first by apply wp_write_na_s.
+    rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
+    rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
+  - rewrite -wp_bind. eapply wand_apply; first by apply wp_write_sc_s.
+    rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
+    rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
+Qed.
+
+Lemma tac_wp_write K Δ Δ' Δ'' E i l v e v' o Φ :
+  IntoVal e v' →
+  o = Na1Ord ∨ o = ScOrd →
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
+  envs_lookup i Δ' = Some (false, l ↦ v)%I →
+  envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
   envs_entails Δ'' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
   envs_entails Δ (WP fill K (Write o (Lit $ LitLoc l) e) @ E {{ Φ }}).
 Proof.
@@ -164,6 +198,25 @@ Proof.
     rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
     rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
 Qed.
+
+Lemma tac_wp_write_vec K Δ Δ' Δ'' E i l vs e v' o Φ :
+  IntoVal e v' → val_size v' = list_ty_size vs →
+  o = Na1Ord ∨ o = ScOrd→
+  MaybeIntoLaterNEnvs 1 Δ Δ' →
+  envs_lookup i Δ' = Some (false, l ↦∗ vs)%I →
+  envs_simple_replace i false (Esnoc Enil i (l ↦ v')) Δ' = Some Δ'' →
+  envs_entails Δ'' (WP fill K (Lit LitPoison) @ E {{ Φ }}) →
+  envs_entails Δ (WP fill K (Write o (Lit $ LitLoc l) e) @ E {{ Φ }}).
+Proof.
+  rewrite envs_entails_unseal; intros ?? [-> | ->] ????.
+  - rewrite -wp_bind. eapply wand_apply; first by apply wp_write_na_vec.
+    rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
+    rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
+  - rewrite -wp_bind. eapply wand_apply; first by apply wp_write_sc_vec.
+    rewrite into_laterN_env_sound -later_sep envs_simple_replace_sound //; simpl.
+    rewrite right_id. by apply later_mono, sep_mono_r, wand_mono.
+Qed.
+
 End heap.
 
 Tactic Notation "wp_apply" open_constr(lem) :=
@@ -226,7 +279,7 @@ Tactic Notation "wp_free" :=
   | _ => fail "wp_free: not a 'wp'"
   end.
 
-(* TODO: get wp_read for ↦s, too *)
+(* FIXME: can I eapply tac_wp_read, or if that fails, tac_wp_read_s? *)
 Tactic Notation "wp_read" :=
   iStartProof;
   lazymatch goal with
@@ -241,6 +294,23 @@ Tactic Notation "wp_read" :=
      iAssumptionCore || fail "wp_read: cannot find" l "↦ ?"
     |simpl; try wp_value_head]
   | _ => fail "wp_read: not a 'wp'"
+  end.
+
+
+Tactic Notation "wp_read_s" :=
+  iStartProof;
+  lazymatch goal with
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
+    first
+      [reshape_expr e ltac:(fun K e' => eapply (tac_wp_read_s K))
+      |fail 1 "wp_read_s: cannot find 'Read' in" e];
+    [(right; fast_done) || (left; fast_done) ||
+     fail "wp_read_s: order is neither Na2Ord nor ScOrd"
+    |iSolveTC
+    |let l := match goal with |- _ = Some (_, (?l ↦s{_} _)%I) => l end in
+     iAssumptionCore || fail "wp_read: cannot find" l "↦s ?"
+    |simpl; try wp_value_head]
+  | _ => fail "wp_read_s: not a 'wp'"
   end.
 
 Tactic Notation "wp_write" :=
@@ -258,4 +328,38 @@ Tactic Notation "wp_write" :=
     |pm_reflexivity
     |simpl; try first [wp_pure (Seq (Lit LitPoison) _)|wp_value_head]]
   | _ => fail "wp_write: not a 'wp'"
+  end.
+
+Tactic Notation "wp_write_s" :=
+  iStartProof;
+  lazymatch goal with
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
+    first
+      [reshape_expr e ltac:(fun K e' => eapply (tac_wp_write_s K); [iSolveTC|..])
+      |fail 1 "wp_writes: cannot find 'Write' in" e];
+    [(right; fast_done) || (left; fast_done) ||
+     fail "wp_writes: order is neither Na2Ord nor ScOrd"
+    |iSolveTC
+    |let l := match goal with |- _ = Some (_, (?l ↦s{_} _)%I) => l end in
+     iAssumptionCore || fail "wp_writes: cannot find" l "↦ ?"
+    |pm_reflexivity
+    |simpl; try first [wp_pure (Seq (Lit LitPoison) _)|wp_value_head]]
+  | _ => fail "wp_writes: not a 'wp'"
+  end.
+
+Tactic Notation "wp_write_vec" :=
+  iStartProof;
+  lazymatch goal with
+  | |- envs_entails _ (wp ?s ?E ?e ?Q) =>
+    first
+      [reshape_expr e ltac:(fun K e' => eapply (tac_wp_write_vec K); [iSolveTC|..])
+      |fail 1 "wp_write_vec: cannot find 'Write' in" e];
+    [(right; fast_done) || (left; fast_done) ||
+     fail "wp_write_vec: order is neither Na2Ord nor ScOrd"
+    |iSolveTC
+    |let l := match goal with |- _ = Some (_, (?l ↦{_} _)%I) => l end in
+     iAssumptionCore || fail "wp_write_vec: cannot find" l "↦ ?"
+    |pm_reflexivity
+    |simpl; try first [wp_pure (Seq (Lit LitPoison) _)|wp_value_head]]
+  | _ => fail "wp_write_vec: not a 'wp'"
   end.

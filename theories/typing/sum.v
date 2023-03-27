@@ -24,12 +24,12 @@ Section sum.
   Next Obligation. iIntros (κ κ' tid l) "#Hord []". Qed.
 
   Definition is_pad i tyl (vl : list val) : iProp Σ :=
-    ⌜((nth i tyl emp0).(ty_size) + length vl)%nat = (max_list_with ty_size tyl)⌝%I.
+    ⌜((nth i tyl emp0).(ty_size) + list_ty_size vl)%nat = (max_list_with ty_size tyl)⌝%I.
 
   Lemma split_sum_mt l tid q tyl :
     (l ↦∗{q}: λ vl,
          ∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                               ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
+                               ⌜list_ty_size vl = S (max_list_with ty_size tyl)⌝ ∗
                                ty_own (nth i tyl emp0) tid vl')%I
     ⊣⊢ ∃ (i : nat), (l ↦{q} #i ∗
                      (l +ₗ (S $ (nth i tyl emp0).(ty_size))) ↦∗{q}: is_pad i tyl) ∗
@@ -41,7 +41,7 @@ Section sum.
       iDestruct (ty_size_eq with "Hown") as "#EQ". iDestruct "EQ" as %Hvl'.
       iDestruct (heap_mapsto_vec_app with "Hmt") as "[Hmt Htail]". iSplitL "Htail".
       + iExists vl''. rewrite (shift_loc_assoc_nat _ 1) Hvl'. iFrame. iPureIntro.
-        rewrite -Hvl'. simpl in *. rewrite -app_length. congruence.
+        rewrite -Hvl'. simpl in *. rewrite -list_ty_dist. rewrite lty_cons /= in H0. congruence.
       + iExists vl'. by iFrame.
     - iDestruct "H" as (i) "[[Hmt1 Htail] Hown]".
       iDestruct "Hown" as (vl') "[Hmt2 Hown]". iDestruct "Htail" as (vl'') "[Hmt3 %]".
@@ -49,14 +49,14 @@ Section sum.
       iExists (#i::vl'++vl'').
       rewrite heap_mapsto_vec_cons heap_mapsto_vec_app (shift_loc_assoc_nat _ 1) Hvl'.
       iFrame. iExists i, vl', vl''. iSplit; first done. iFrame. iPureIntro.
-      simpl. f_equal. by rewrite app_length Hvl'.
+      simpl. f_equal. by rewrite lty_cons /= list_ty_dist -H Hvl'.
   Qed.
 
   Program Definition sum (tyl : list type) :=
     {| ty_size := S (max_list_with ty_size tyl);
        ty_own tid vl :=
          (∃ (i : nat) vl' vl'', ⌜vl = #i :: vl' ++ vl''⌝ ∗
-                                ⌜length vl = S (max_list_with ty_size tyl)⌝ ∗
+                                ⌜list_ty_size vl = S (max_list_with ty_size tyl)⌝ ∗
                                 (nth i tyl emp0).(ty_own) tid vl')%I;
        ty_shr κ tid l :=
          (∃ (i : nat),
@@ -208,7 +208,7 @@ Section sum.
       + iNext. iExists i. iFrame.
       + iIntros "Htl H". iDestruct "H" as (i') "[>Hown1 HownC1]".
         iDestruct ("Htlclose" with "Htl") as "Htl".
-        iDestruct (heap_mapsto_agree with "[Hown1 Hown2]") as "#Heq".
+        iDestruct ((heap_mapsto_simple_agree l q' q'01 #i' #i) with "[Hown1 Hown2]") as "#Heq"; try done.
         { iDestruct "Hown1" as "[$ _]". iDestruct "Hown2" as "[$ _]". }
         iDestruct "Heq" as %[= ->%Nat2Z.inj].
         iMod ("Hclose'" with "Htl [$HownC1 $HownC2]") as "[$ ?]".

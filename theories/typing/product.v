@@ -56,8 +56,8 @@ Section product.
           ty2.(ty_shr) κ tid (l +ₗ ty1.(ty_size)))%I |}.
   Next Obligation.
     iIntros (ty1 ty2 tid vl) "H". iDestruct "H" as (vl1 vl2) "(% & H1 & H2)".
-    subst. rewrite app_length !ty_size_eq.
-    iDestruct "H1" as %->. iDestruct "H2" as %->. done.
+    subst. rewrite -flatten_size flatten_dist app_length !flatten_size !ty_size_eq.
+    iDestruct "H1" as %<-. iDestruct "H2" as %<-. done.
   Qed.
   Next Obligation.
     intros ty1 ty2 E κ l tid q ?. iIntros "#LFT /= H Htok". rewrite split_prod_mt.

@@ -99,7 +99,8 @@ End fixpoint.
 Section subtyping.
   Context `{!typeGS Σ} (E : elctx) (L : llctx).
 
-  (* TODO : is there a way to declare these as a [Proper] instances ? *)
+  (* TODO : is there a way to declare these as a [Proper] instances ?
+    完全不懂啊 *)
   Lemma fixpoint_mono T1 `{!TypeContractive T1} T2 `{!TypeContractive T2} :
     (∀ ty1 ty2, subtype E L ty1 ty2 → subtype E L (T1 ty1) (T2 ty2)) →
     subtype E L (type_fixpoint T1) (type_fixpoint T2).

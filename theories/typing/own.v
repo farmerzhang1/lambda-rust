@@ -193,29 +193,42 @@ Section util.
 
   Lemma ownptr_own n ty tid v :
     (own_ptr n ty).(ty_own) tid [v] ⊣⊢
-       ∃ (l : loc) (vl : vec val ty.(ty_size)),
-         ⌜v = #l⌝ ∗ ▷ l ↦∗ vl ∗ ▷ ty.(ty_own) tid vl ∗ ▷ freeable_sz n ty.(ty_size) l.
+       ∃ (l : loc) (vl : vec val ty.(ty_size)) (vl' : list val),
+         ⌜v = #l⌝ ∗ ▷ ⌜vec_to_list vl = flatten vl'⌝ ∗ ▷ l ↦∗ vl' ∗ ▷ ty.(ty_own) tid vl' ∗ ▷ freeable_sz n ty.(ty_size) l.
   Proof.
     iSplit.
     - iIntros "Hown". destruct v as [[|l|]| | |]; try done.
       iExists l. iDestruct "Hown" as "[Hown $]". rewrite heap_mapsto_ty_own.
-      iDestruct "Hown" as (vl) "[??]". eauto with iFrame.
-    - iIntros "Hown". iDestruct "Hown" as (l vl) "(% & ? & ? & ?)". subst v.
+      iDestruct "Hown" as (vl vl') "(? & ? & ?)". eauto with iFrame.
+    - iIntros "Hown". iDestruct "Hown" as (l vl vl') "(% & ? & ? & ? & ?)". subst v.
       iFrame. iExists _. iFrame.
   Qed.
 
   Lemma ownptr_uninit_own n m tid v :
     (own_ptr n (uninit m)).(ty_own) tid [v] ⊣⊢
-         ∃ (l : loc) (vl' : vec val m), ⌜v = #l⌝ ∗ ▷ l ↦∗ vl' ∗ ▷ freeable_sz n m l.
+         ∃ (l : loc) (vl' : list val), ⌜v = #l⌝ ∗ ▷ ⌜list_ty_size vl' = m⌝ ∗ ▷ l ↦∗ vl' ∗ ▷ freeable_sz n m l.
   Proof.
     rewrite ownptr_own. apply bi.exist_proper=>l. iSplit.
     (* FIXME: The goals here look rather confusing:  One cannot tell that we are looking at
        a statement in Iris; the top-level → could just as well be a Coq implication. *)
-    - iIntros "H". iDestruct "H" as (vl) "(% & Hl & _ & $)". subst v.
-      iExists vl. iSplit; done.
-    - iIntros "H". iDestruct "H" as (vl) "(% & Hl & $)". subst v.
-      iExists vl. rewrite /= vec_to_list_length.
-      eauto with iFrame.
+    - iIntros "H". iDestruct "H" as (vl vl') "(% & Hvl & Hl & Hown & $)". subst v.
+      rewrite uninit_own.
+      iExists (vl'). iSplit; try done. rewrite -bi.later_sep. iNext. 
+      iFrame.
+    - iIntros "H". iDestruct "H" as (vl) "(% & Hvl & Hl & $)". subst v.
+      rewrite -flatten_size /uninit /=.
+      setoid_rewrite <-bi.sep_exist_l.
+      setoid_rewrite <-bi.sep_exist_l.
+      iSplit; auto.
+      setoid_rewrite <-bi.later_sep.
+      setoid_rewrite <-bi.later_sep.
+      setoid_rewrite <-bi.later_exist.
+      setoid_rewrite <-bi.later_exist.
+      iNext.
+      iDestruct "Hvl" as %<-.
+      iExists (list_to_vec (flatten vl)), vl.
+      iFrame. iPureIntro; split; last by rewrite flatten_size.
+      induction (flatten vl); auto. simpl. by rewrite IHl0.
   Qed.
 End util.
 
@@ -241,7 +254,7 @@ Section typing.
     iExists l, _, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !>".
     iExists _. auto.
   Qed.
-
+  (* uninit n requires elements of vl to be size 1, can we do better? *)
   Lemma read_own_move E L ty n :
     ⊢ typed_read E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
   Proof.
@@ -250,7 +263,7 @@ Section typing.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%".
     iExists l, vl, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !> !>".
-    iExists _. iFrame. done.
+    iExists _. iFrame. simpl. done.
   Qed.
 
   Lemma type_new_instr {E L} (n : Z) :
@@ -262,7 +275,7 @@ Section typing.
     iApply wp_new; try done. iModIntro.
     iIntros (l) "(H† & Hlft)". rewrite tctx_interp_singleton tctx_hasty_val.
     iNext. rewrite freeable_sz_full Z2Nat.id //. iFrame.
-    iExists (repeat #☠ (Z.to_nat n)). iFrame. by rewrite /= repeat_length.
+    iExists (repeat #☠ (Z.to_nat n)). iFrame. by rewrite /= st_repeat_size.
   Qed.
 
   Lemma type_new {E L C T} (n' : nat) x (n : Z) e :

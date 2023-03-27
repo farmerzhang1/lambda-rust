@@ -67,7 +67,7 @@ Section typing.
   Definition typed_write_def (E : elctx) (L : llctx) (ty1 ty ty2 : type) : iProp Σ :=
     (□ ∀ v tid F qmax qL, ⌜↑lftN ∪ (↑lrustN) ⊆ F⌝ →
       lft_ctx -∗ elctx_interp E -∗ llctx_interp_noend qmax L qL -∗ ty1.(ty_own) tid [v] ={F}=∗
-        ∃ (l : loc) vl, ⌜length vl = ty.(ty_size) ∧ v = #l⌝ ∗ l ↦∗ vl ∗
+        ∃ (l : loc) vl, ⌜list_ty_size vl = ty.(ty_size) ∧ v = #l⌝ ∗ l ↦∗ vl ∗
           (▷ l ↦∗: ty.(ty_own) tid ={F}=∗
             llctx_interp_noend qmax L qL ∗ ty2.(ty_own) tid [v]))%I.
   Definition typed_write_aux : seal (@typed_write_def). Proof. by eexists. Qed.
@@ -252,14 +252,23 @@ Section typing_rules.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Hwrt with "[] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
     subst v1. iDestruct (ty_size_eq with "Hown2") as "#Hsz". iDestruct "Hsz" as %Hsz.
-    rewrite <-Hsz in *. destruct vl as [|v[|]]; try done.
+    rewrite <-Hsz in *. rewrite lty_size_singleton in H0. symmetry in H0.
+    iApply wp_fupd. 
+    admit.
+  Admitted.
+    (* wp_write_vec. *)
+    (* the points-to connective use length to specify 
+      the size of (list type), but now we can't
+      can we get wp_write to operate on l ↦∗ _ ?
+    *)
+    (* destruct vl as [|v[|]]; try done.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_write.
     rewrite -heap_mapsto_vec_singleton.
     iMod ("Hclose" with "[Hl Hown2]") as "(HL & Hown)".
     { iExists _. iFrame. }
     iDestruct ("HLclose" with "HL") as "$".
     rewrite tctx_interp_singleton tctx_hasty_val' //.
-  Qed.
+  Qed. *)
 
   Lemma type_assign {E L} ty1 ty ty1' C T T' p1 p2 e:
     Closed [] e →
@@ -281,6 +290,7 @@ Section typing_rules.
     iMod (Hread with "[] LFT HE Htl HL Hown") as
         (l vl q) "(% & Hl & Hown & Hclose)"; first done.
     subst v. iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
+    apply length1_size1 in H0.
     destruct vl as [|v [|]]; try done.
     rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
     iMod ("Hclose" with "Hl") as "($ & HL & Hown2)".

@@ -28,8 +28,8 @@ Section specs.
   Qed.
 
   Lemma wp_delete E (n:Z) l vl :
-    n = length vl →
-    {{{ l ↦∗ vl ∗ (†l…(length vl) ∨ ⌜n = 0⌝) }}}
+    n = list_ty_size vl →
+    {{{ l ↦∗ vl ∗ (†l…(list_ty_size vl) ∨ ⌜n = 0⌝) }}}
       delete [ #n; #l] @ E
     {{{ RET #☠; True }}}.
   Proof.
@@ -44,5 +44,5 @@ Notation "'letalloc:' x <- e1 'in' e2" :=
   ((Lam (@cons binder x%E%E%E nil) (x <- e1 ;; e2)) [new [ #1]])%E
   (at level 102, x at level 1, e1, e2 at level 150) : expr_scope.
 Notation "'letalloc:' x <-{ n } ! e1 'in' e2" :=
-  ((Lam (@cons binder x%E%E%E nil) (x <-{n%Z%V%L} !e1 ;; e2)) [new [ #n]])%E
+  ((Lam (@cons binder x%E%E%E nil) (x <-{ n%Z%V%L } !e1 ;; e2)) [new [ #n]])%E
   (at level 102, x at level 1, e1, e2 at level 150) : expr_scope.

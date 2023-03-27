@@ -12,7 +12,9 @@ Notation iProp := (iProp Σ).
 
 Definition re1 := rnil%E.
 Definition re2 := ("i1" r: #1 + #2 :r: "i2" r: #2 :r: rnil)%E.
-Definition record_type := record [("x", int); ("y", int); ("z", bool)].
+Definition re3 := ("i1" r: #12 :r: "i2" r: #2 :r: rnil)%V.
+
+Definition record_type := record [("i1", int); ("i2", int)].
 
 Example re1_spec: ⊢ WP re1 {{ v, ⌜ v = RecordVNil ⌝ } }.
 Proof.
@@ -29,29 +31,19 @@ End record.
 
 Section typing.
 Context `{!typeGS Σ}.
-
-Definition prod_pre t : type := Π [int; int; box t].
-Local Instance prod_cont : TypeContractive prod_pre.
+Lemma re2_typed :  typed_val re3 record_type.
 Proof.
-  intros n p1 p2 Hp.
-  rewrite /prod_pre. f_equiv.
-  f_equiv.
-  repeat f_equiv. apply Hp.
+  intros E L. iIntros (??) "lft #E Hna L T". rewrite /re3. iApply wp_value. iFrame.
+  rewrite tctx_hasty_val. rewrite /record_type. iExists #12, ("i2" r: #2 :r: rnil)%V.
+  iSplit; first done. iSplit; first done.
+  iExists #2, rnil%V.
+  iSplit; first done. iSplit; first done. rewrite /rnil' //.
 Qed.
 
-Definition prod_pre1 t : type := Π [int; int; box t].
-Local Instance prod_cont1 : TypeContractive prod_pre1.
-Proof.
-  intros n p1 p2 Hp.
-  rewrite /prod_pre1. f_equiv.
-  repeat f_equiv. apply Hp.
-Qed.
-
-Definition obj_sub E L : subtype E L (type_fixpoint prod_pre) (type_fixpoint prod_pre1).
-Proof.
-  apply fixpoint_mono. intros.
-  apply product_mono. repeat f_equiv. apply H.
-Qed.
+Definition try_obj : val := rec: "mkobj" ["repr"] :=
+  "get" r: "repr" ↓ "x" :r: 
+  "set" r: (λ "n", "mkobj" ["x" r: "n" :r: rnil]) :r:
+  "bump" : "mkobj" ["x" : "repr" ↓ "x" + #1] :r: rnil
 
 Definition obj_pre t := record [("x", int); ("y", int); ("area", box t)].
 Definition obj_pre1 t := record [("x", int); ("y", int); ("area", box t)].
@@ -84,5 +76,7 @@ Definition obj1 := type_fixpoint obj_pre1.
 Definition obj_sub E L : subtype E L obj obj1.
 Proof.
   apply fixpoint_mono. intros. unfold obj_pre, obj_pre1.
+  admit.
+Admitted.
 (* TODO *)
 End typing.

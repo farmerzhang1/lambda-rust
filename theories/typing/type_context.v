@@ -69,12 +69,15 @@ Admitted.
     eval_path p = Some v → Closed [] p.
   Proof.
     intros Hpv. revert v Hpv.
-    induction p as [| | |[] p IH [|[]| | | | | | | | | | | |] _| | | | | | | | | |]=>//.
+    induction p as [| | |[] p IH [|[]| | | | | | | | | | | | |] _| | | | | | | | | | |]=>//.
     - unfold eval_path=>? /of_to_val <-. apply is_closed_of_val.
     - simpl. destruct (eval_path p) as [[[]| | |]|]; intros ? [= <-].
       specialize (IH _ eq_refl). apply _.
-    - admit.
-  Admitted.
+    - simpl. destruct (to_val p1) eqn:?; try discriminate. destruct (to_val p2) eqn:?; try discriminate.
+      intros ??. Search (Some _ = Some _). rewrite /Closed /=. rewrite andb_True.
+      split.
+      + apply (IHp1 v).
+    Admitted.
 
   (** Type context element *)
   Definition tctx_elt_interp (tid : thread_id) (x : tctx_elt) : iProp Σ :=
