@@ -4,6 +4,7 @@ From lrust.lang Require Export heap.
 From lrust.lang Require Import proofmode notation.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing.
+From iris.prelude Require Import options.
 
 Check (Closed [] (rec: "mkobj" ["repr"] :=
   "repr" ↓ "x")%V).
