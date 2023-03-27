@@ -74,7 +74,7 @@ Admitted.
     - simpl. destruct (eval_path p) as [[[]| | |]|]; intros ? [= <-].
       specialize (IH _ eq_refl). apply _.
     - simpl. destruct (to_val p1) eqn:?; try discriminate. destruct (to_val p2) eqn:?; try discriminate.
-      intros ??. Search (Some _ = Some _). rewrite /Closed /=. rewrite andb_True.
+      intros ??. rewrite /Closed /=. rewrite andb_True.
       split.
       + apply (IHp1 v).
     Admitted.
