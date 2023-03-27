@@ -26,10 +26,12 @@ Notation "'case:' e0 'of' el" := (Case e0%E el%E)
   (at level 102, e0, el at level 150) : expr_scope.
 Notation "'rnil'" := RecordNil : expr_scope.
 Notation "'rnil'" := RecordVNil : val_scope.
-Notation "l 'r:' e1 ':r:' e2" := (RecordCons l e1%E e2%E)
-  (at level 50, e1, e2 at level 90, right associativity) : expr_scope.
-Notation "l 'r:' e1 ':r:' e2" := (RecordVCons l e1%V e2%V)
-  (at level 50, e1, e2 at level 90, right associativity) : val_scope.
+Notation "l 'r:' e1 ':r:' e2" := (RecordCons l%string e1%E e2%E)
+  (at level 90, e1, e2 at level 95, right associativity) : expr_scope.
+Notation "l 'r:' e1 ':r:' e2" := (RecordVCons l%string e1%V e2%V)
+  (at level 90, e1, e2 at level 95, right associativity) : val_scope.
+Notation "e '↓' f" := (Project e%E f%string)
+  (at level 40) : expr_scope.
 Notation "'if:' e1 'then' e2 'else' e3" := (If e1%E e2%E e3%E)
   (only parsing, at level 102, e1, e2, e3 at level 150) : expr_scope.
 Notation "☠" := LitPoison : val_scope.
@@ -102,7 +104,7 @@ Notation "'letcall:' x := f args 'in' e" :=
   (letcont: "_k" [ x ] := e in call: f args → "_k")%E
   (at level 102, x, f, args at level 1, e at level 150) : expr_scope.
 
-(* These notations unfortunately do not print.  Also, I don't think
+(* These notations unfortunately do not print. Also, I don't think
    we would even want them to print in general.
    TODO: Introduce a Definition. *)
 Notation "e1 '<-{Σ' i } '()'" := (e1 <- #i)%E

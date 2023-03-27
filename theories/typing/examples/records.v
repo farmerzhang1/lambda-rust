@@ -4,7 +4,22 @@ From lrust.lang Require Export heap.
 From lrust.lang Require Import proofmode notation.
 From lrust.typing Require Export type.
 From lrust.typing Require Import typing.
-From iris.prelude Require Import options.
+
+Check (Closed [] (rec: "mkobj" ["repr"] :=
+  "repr" ↓ "x")%V).
+Compute (Closed [] (rec: "mkobj" ["repr"] :=
+  "repr" ↓ "x")%V).
+
+Check (Closed ("mkobj" :b: ["repr"]%binder +b+ []) ("repr" ↓ "x")%E).
+Compute (Closed ("mkobj" :b: ["repr"]%binder +b+ []) ("repr" ↓ "x")%E).
+
+Definition obj_test : val :=
+  rec: "mkobj" ["repr"] :=
+    "repr" ↓ "x".
+
+    (* "get" r: "repr" ↓ "x" :r: 
+    "set" r: (λ: ["n"], ("mkobj" ["x" r: "n" :r: rnil])) :r:
+    "bump" r: ("mkobj" [ ("x" r: (("repr" ↓ "x") + #1) :r: rnil)%E ]) :r: rnil%E. *)
 
 Section record.
 Context `{!typeGS Σ}.

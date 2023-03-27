@@ -42,7 +42,8 @@ Inductive expr :=
 | Case (e : expr) (el : list expr)
 | Fork (e : expr)
 | RecordNil
-| RecordCons (l : string) (e1 e2 : expr).
+| RecordCons (l : string) (e1 e2 : expr)
+| Project (e : expr) (f : string).
 
 Global Arguments App _%E _%E.
 Global Arguments Case _%E _%E.
@@ -50,15 +51,13 @@ Global Arguments Case _%E _%E.
 Fixpoint is_closed (X : list string) (e : expr) : bool :=
   match e with
   | Var x => bool_decide (x ∈ X)
-  | Lit _ => true
+  | Lit _ | RecordNil => true
   | Rec f xl e => is_closed (f :b: xl +b+ X) e
-  | BinOp _ e1 e2 | Write _ e1 e2 | Free e1 e2 =>
+  | BinOp _ e1 e2 | Write _ e1 e2 | Free e1 e2 | RecordCons _ e1 e2 =>
     is_closed X e1 && is_closed X e2
   | App e el | Case e el => is_closed X e && forallb (is_closed X) el
-  | Read _ e | Alloc e | Fork e => is_closed X e
+  | Read _ e | Alloc e | Fork e | Project e _ => is_closed X e
   | CAS e0 e1 e2 => is_closed X e0 && is_closed X e1 && is_closed X e2
-  | RecordNil => true
-  | RecordCons l e1 e2 => is_closed X e1 && is_closed X e2
   end.
 
 Class Closed (X : list string) (e : expr) := closed : is_closed X e.
@@ -73,12 +72,11 @@ Inductive val :=
 | RecordVNil
 | RecordVCons (l : string) (v1 v2 : val).
 
+Section Flatten.
 Fixpoint val_size (v : val) : nat := match v with 
-  | LitV _ => 1
-  | RecV _ _ _ => 1
-  | RecordVNil => 1
   | RecordVCons _ v1 v2 => val_size v1 + val_size v2
-end.
+  | _ => 1 (* FIXME: size of rnil is actually zero *)
+  end.
 
 Fixpoint flattenv v := match v with
 | RecordVCons l v1 v2 => flattenv v1 ++ flattenv v2
@@ -95,9 +93,12 @@ Proof.
   induction v; try done.
   simpl. lia.
 Qed.
+
 Definition list_ty_size := sum_list ∘ map val_size.
+
 Lemma lty_cons v vl : list_ty_size (v :: vl) = (val_size v + list_ty_size vl)%nat.
 Proof. done. Qed.
+
 Lemma lty_eq0_emp vl : list_ty_size vl = 0%nat → vl = [].
 Proof.
   destruct vl; first done.
@@ -106,12 +107,133 @@ Proof.
   intros. lia.
 Qed.
 
+Lemma lty_ge_len vl : list_ty_size vl >= length vl.
+Proof.
+  induction vl; first done.
+  rewrite lty_cons. simpl.
+  assert (val_size a >= 1) by apply val_gt1.
+  lia.
+Qed.
+
 Lemma length1_size1 vl : list_ty_size vl = 1%nat → length vl = 1%nat.
 Proof.
   destruct vl as [ |]; first discriminate; rewrite lty_cons; intros.
-  - assert (list_ty_size vl = 0%nat). { assert (val_size v >= 1%nat); first apply val_gt1. lia. }
+  - assert (list_ty_size vl = 0%nat). { assert (val_size v >= 1%nat) by apply val_gt1. lia. }
   apply lty_eq0_emp in H0; subst; done.
 Qed.
+
+Lemma lty_len_eq vl : list_ty_size vl = length vl → Forall (λ v, val_size v = S O) vl.
+Proof.
+  intros.
+  induction vl; first done.
+  rewrite Forall_cons_iff. rewrite lty_cons in H. simpl in H. assert (val_size a = S O).
+  - destruct a; try done. 
+    assert (list_ty_size vl >= length vl) by apply lty_ge_len.
+    simpl in H.
+    assert (val_size a1 >= S O) by apply val_gt1.
+    assert (val_size a2 >= S O) by apply val_gt1.
+    exfalso. lia.
+  - rewrite H0. rewrite H0 in H. split; first done.
+    apply IHvl. lia.
+Qed.
+
+Lemma flatten_unit vl : Forall (λ v, val_size v = S O) vl → flatten vl = vl.
+Proof.
+  induction 1; auto.
+  simpl. rewrite IHForall.
+  destruct x; try done. simpl in H.
+  assert (val_size x1 >= S O) by apply val_gt1.
+  assert (val_size x2 >= S O) by apply val_gt1.
+  exfalso. lia.
+Qed.
+
+Lemma flatten_dist vl1 vl2 : flatten (vl1 ++ vl2) = flatten vl1 ++ flatten vl2.
+Proof.
+  induction vl1; auto.
+  rewrite <-app_comm_cons.
+  simpl. rewrite <-app_assoc. f_equiv. apply IHvl1.
+Qed.
+
+Lemma flatten_size vl : length (flatten vl) = list_ty_size vl.
+Proof.
+  induction vl; auto. simpl. rewrite lty_cons.
+  rewrite app_length IHvl. f_equal.
+  induction a; try done. simpl. rewrite app_length. naive_solver.
+Qed.
+
+Lemma list_ty_dist vl1 vl2 : list_ty_size (vl1 ++ vl2) = (list_ty_size vl1 + list_ty_size vl2)%nat.
+Proof.
+  by rewrite -!flatten_size flatten_dist app_length.
+Qed.
+
+Lemma flatten_idemp vl : flatten (flatten vl) = flatten vl. 
+Proof.
+  induction vl; auto. simpl.
+  rewrite flatten_dist.  
+  rewrite IHvl.
+  rewrite app_inv_tail_iff.
+  induction a; simpl; auto.
+  by rewrite flatten_dist IHa1 IHa2.
+Qed.
+
+Lemma st_repeat_size v n : val_size v = 1%nat → list_ty_size (repeat v n) = n.
+Proof.
+  intros. induction n; simpl; try done.
+  by rewrite lty_cons IHn H.
+Qed.
+
+Lemma flatten_singleton v : flatten [v] = flattenv v.
+Proof. by rewrite /flatten app_nil_r. Qed.
+
+Lemma flattenv_idemp v : flatten (flattenv v) = flattenv v. 
+Proof.
+  rewrite -flatten_singleton flatten_idemp //.
+Qed.
+
+Lemma lty_size_singleton v : list_ty_size [v] = val_size v.
+  Proof. by rewrite /list_ty_size /=. 
+Qed.
+
+Lemma flatten_nil : flatten [] = [].
+Proof. done. Qed.
+
+Lemma lty_size_emp : list_ty_size [] = O.
+  Proof. by rewrite /=. 
+Qed.
+
+Lemma flattenv_simpl v : list_ty_size (flattenv v) = val_size v.
+Proof.
+  by rewrite -flatten_singleton -flatten_size flatten_idemp flatten_size lty_size_singleton.
+Qed.
+
+Lemma flattenv_noemp v : flattenv v ≠ [].
+Proof.
+  induction v; try done. simpl. intro H.
+  by destruct (app_eq_nil _ _ H).
+Qed.
+
+Lemma flattenv_0th v : ∃ (x : val), flattenv v !! O = Some x.
+Proof.
+  remember (flattenv v) as vs.
+  assert (∃ x xs, vs = x :: xs).
+  { assert (flattenv v ≠ []) by apply flattenv_noemp. rewrite -Heqvs in H.
+    destruct vs; first done. eauto. }
+  (* do we have an easier way to get the existentials out of a hypothesis? *)
+  destruct H. destruct H.
+  exists x. by rewrite H.
+Qed.
+
+Lemma flatten_emp vl : [] = flatten vl ↔ vl = [].
+Proof.
+  assert (∀ v, flattenv v ≠ []) by apply flattenv_noemp.
+  split.
+  - rewrite /flatten. destruct vl; first done. intros. symmetry in H0. 
+    destruct (app_eq_nil _ _ H0).
+    destruct (H v). done.
+  - intros. by rewrite /flatten H0.
+Qed.
+
+End Flatten.
 
 Bind Scope val_scope with val.
 
@@ -162,7 +284,8 @@ Inductive ectx_item :=
 | CaseCtx (el : list expr)
 (* evaluating a certain field, need field name *)
 | RecordConsLCtx (l : string) (e : expr)
-| RecordConsRCtx (l : string) (e : val).
+| RecordConsRCtx (l : string) (e : val)
+| ProjectCtx (f : string).
 
 Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   match Ki with
@@ -182,6 +305,7 @@ Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
   | CaseCtx el => Case e el
   | RecordConsLCtx l e2 => RecordCons l e e2
   | RecordConsRCtx l e1 => RecordCons l (of_val e1) e
+  | ProjectCtx f => Project e f
   end.
 
 (** Substitution *)
@@ -202,6 +326,7 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   | Fork e => Fork (subst x es e)
   | RecordNil => RecordNil
   | RecordCons l e1 e2 => RecordCons l (subst x es e1) (subst x es e2)
+  | Project e f => Project (subst x es e) f
   end.
 
 Definition subst' (mx : binder) (es : expr) : expr → expr :=
@@ -302,7 +427,10 @@ end.
 Definition val_in_mem (σ : state) l lk v := ∀ (k : nat) x, flattenv v !! k = Some x → σ !! (l +ₗ k) = Some (lk, x).
 
 Definition write_val σ l lk v := write_vals σ l lk (flattenv v).
-
+Fixpoint tlookup v f := match v with
+  | (RecordVCons f' v1 v2) => if (bool_decide (f = f')) then Some v1 else tlookup v2 f
+  | _ => None
+  end.
 (* TODO: adapt read/write for compound values *)
 Inductive head_step : expr → state → list Empty_set → expr → state → list expr → Prop :=
 | BinOpS op l1 l2 l' σ :
@@ -406,7 +534,10 @@ Inductive head_step : expr → state → list Empty_set → expr → state → l
     el !! (Z.to_nat i) = Some e →
     head_step (Case (Lit $ LitInt i) el) σ [] e σ []
 | ForkS e σ:
-    head_step (Fork e) σ [] (Lit LitPoison) σ [e].
+    head_step (Fork e) σ [] (Lit LitPoison) σ [e]
+| ProjectS v v' f σ:
+    tlookup v f = Some v' →
+    head_step (Project (of_val v) f) σ [] (of_val v') σ [].
 
 (** Basic properties about the language *)
 Lemma to_of_val v : to_val (of_val v) = Some v.
@@ -446,7 +577,9 @@ Lemma head_ctx_step_val Ki e σ1 κ e2 σ2 ef :
   head_step (fill_item Ki e) σ1 κ e2 σ2 ef → is_Some (to_val e).
 Proof.
   destruct Ki; inversion_clear 1; decompose_Forall_hyps;
-    simplify_option_eq; by eauto.
+    simplify_option_eq; eauto.
+  - exfalso. apply H2, H1.
+  - rewrite to_of_val //.
 Qed.
 
 Lemma list_expr_val_eq_inv vl1 vl2 e1 e2 el1 el2 :
@@ -466,8 +599,8 @@ Lemma fill_item_no_val_inj Ki1 Ki2 e1 e2 :
   to_val e1 = None → to_val e2 = None →
   fill_item Ki1 e1 = fill_item Ki2 e2 → Ki1 = Ki2.
 Proof.
-  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | | | |],
-           Ki2 as [| | |v2 vl2 el2| | | | | | | | | | | |];
+  destruct Ki1 as [| | |v1 vl1 el1| | | | | | | | | | | | |],
+           Ki2 as [| | |v2 vl2 el2| | | | | | | | | | | | |];
   intros He1 He2 EQ; try discriminate; simplify_eq/=;
     repeat match goal with
     | H : to_val (of_val _) = None |- _ => by rewrite to_of_val in H
@@ -664,13 +797,14 @@ Fixpoint expr_beq (e : expr) (e' : expr) : bool :=
   | RecordNil, RecordNil => true
   | RecordCons l e1 e2, RecordCons l' e1' e2' =>
     bool_decide (l = l') && expr_beq e1 e1' && expr_beq e2 e2'
+  | Project e1 f1, Project e2 f2 => expr_beq e1 e2 && bool_decide (f1 = f2)
   | _, _ => false
   end.
 Lemma expr_beq_correct (e1 e2 : expr) : expr_beq e1 e2 ↔ e1 = e2.
 Proof.
   revert e1 e2; fix FIX 1. intros e1 e2.
-    destruct e1 as [| | | |? el1| | | | | |? el1| | |],
-             e2 as [| | | |? el2| | | | | |? el2| | |]; simpl; try done;
+    destruct e1 as [| | | |? el1| | | | | |? el1| | | |],
+             e2 as [| | | |? el2| | | | | |? el2| | | |]; simpl; try done;
   rewrite ?andb_True ?bool_decide_spec ?FIX;
   try (split; intro; [destruct_and?|split_and?]; congruence).
   - match goal with |- context [?F el1 el2] => assert (F el1 el2 ↔ el1 = el2) end.
@@ -722,6 +856,7 @@ Qed.
 (* Define some derived forms *)
 Notation Lam xl e := (Rec BAnon xl e) (only parsing).
 Notation Let x e1 e2 := (App (Lam [x] e2) [e1]) (only parsing).
+Notation LetRec f x e1 e2 := (App (Rec f [x] e2) [e1]) (only parsing).
 Notation Seq e1 e2 := (Let BAnon e1 e2) (only parsing).
 Notation LamV xl e := (RecV BAnon xl e) (only parsing).
 Notation LetCtx x e2 := (AppRCtx (LamV [x] e2) [] []).
