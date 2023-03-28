@@ -23,7 +23,8 @@ Inductive expr :=
 | Case (e : expr) (el : list expr)
 | Fork (e : expr)
 | RecordNil
-| RecordCons (l : string) (e1 e2 : expr).
+| RecordCons (l : string) (e1 e2 : expr)
+| Project (e : expr) (f : string).
 
 Fixpoint to_expr (e : expr) : lang.expr :=
   match e with
@@ -43,6 +44,7 @@ Fixpoint to_expr (e : expr) : lang.expr :=
   | Fork e => lang.Fork (to_expr e)
   | RecordNil => lang.RecordNil
   | RecordCons l e1 e2 => lang.RecordCons l (to_expr e1) (to_expr e2)
+  | Project e f => lang.Project (to_expr e) f
   end.
 
 Ltac of_expr e :=
@@ -70,6 +72,7 @@ Ltac of_expr e :=
   | lang.RecordCons ?l ?e1 ?e2 =>
     let e1 := of_expr e1 in let e2 := of_expr e2 in
       constr:(RecordCons l e1 e2)
+  | lang.Project ?e ?f => let e := of_expr e in constr:(Project e f)
   | @nil lang.expr => constr:(@nil expr)
   | @cons lang.expr ?e ?el =>
     let e := of_expr e in let el := of_expr el in constr:(e::el)
@@ -90,7 +93,7 @@ Fixpoint is_closed (X : list string) (e : expr) : bool :=
   | BinOp _ e1 e2 | Write _ e1 e2 | Free e1 e2 =>
     is_closed X e1 && is_closed X e2
   | App e el | Case e el => is_closed X e && forallb (is_closed X) el
-  | Read _ e | Alloc e | Fork e => is_closed X e
+  | Read _ e | Alloc e | Fork e | Project e _ => is_closed X e
   | CAS e0 e1 e2 => is_closed X e0 && is_closed X e1 && is_closed X e2
   | RecordNil => true
   | RecordCons l e1 e2 => is_closed X e1 && is_closed X e2
@@ -158,6 +161,7 @@ Fixpoint subst (x : string) (es : expr) (e : expr)  : expr :=
   | Fork e => Fork (subst x es e)
   | RecordNil => RecordNil
   | RecordCons l e1 e2 => RecordCons l (subst x es e1) (subst x es e2)
+  | Project e f => Project (subst x es e) f
   end.
 Lemma to_expr_subst x er e :
   to_expr (subst x er e) = lang.subst x (to_expr er) (to_expr e).
@@ -316,5 +320,6 @@ Ltac reshape_expr e tac :=
   | Case ?e ?el => go (CaseCtx el :: K) e
   | RecordCons ?l ?e1 ?e2 => reshape_val e1 ltac:(fun v1 => go (RecordConsRCtx l v1 :: K) e2)
   | RecordCons ?l ?e1 ?e2 => go (RecordConsLCtx l e2 :: K) e1
+  | Project ?e ?f => go (ProjectCtx f :: K) e
   end
   in go (@nil ectx_item) e.
