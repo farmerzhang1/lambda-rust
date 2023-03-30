@@ -446,4 +446,19 @@ Proof.
   iApply (wp_app_vec with "Hel"). iIntros (vl) "Hvl".
   iApply ("HΦ" with "[%] Hvl"). by rewrite vec_to_list_length.
 Qed.
+
+Lemma wp_proj r rv f v E Φ :
+  IntoVal r rv → tlookup rv f = Some v →
+  Φ v -∗ WP Project r f @ E {{ Φ }}.
+Proof.
+  iIntros (??) "HΦ".
+  replace (Project r f) with (fill_item (ProjectCtx f) r); last done.
+  iApply wp_bind; iApply wp_value.
+  iApply wp_lift_pure_det_head_step_no_fork; first done.
+  - rewrite /head_reducible.
+    intros ?. exists [], (of_val v), σ1, []. apply ProjectS, H0.
+  - intros ??????. inv_head_step. done.
+  - iIntros "!> !> !> _". by iApply wp_value.
+Qed.
+
 End lifting.

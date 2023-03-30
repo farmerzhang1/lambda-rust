@@ -246,7 +246,7 @@ Section typing.
   Qed.
 
   Lemma read_own_copy E L ty n :
-    Copy ty → ⊢ typed_read E L (own_ptr n ty) ty (own_ptr n ty).
+    Copy ty → ⊢ typed_read true E L (own_ptr n ty) ty (own_ptr n ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hsz) "!>".
     iIntros ([[|l|]| | |] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
@@ -254,17 +254,18 @@ Section typing.
     iExists l, _, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !>".
     iExists _. auto.
   Qed.
-  (* uninit n requires elements of vl to be size 1, can we do better? *)
-  Lemma read_own_move E L ty n :
-    ⊢ typed_read E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
+
+  Lemma read_own_move E L ty n s:
+    ⊢ typed_read s E L (own_ptr n ty) ty (own_ptr n $ uninit ty.(ty_size)).
   Proof.
     rewrite typed_read_eq. iModIntro.
     iIntros ([[|l|]| | |] tid F qmax qL ?) "_ _ $ $ Hown"; try done.
     iDestruct "Hown" as "[H↦ H†]". iDestruct "H↦" as (vl) "[>H↦ Hown]".
     iDestruct (ty_size_eq with "Hown") as "#>%".
-    iExists l, vl, _. iFrame "∗#". iSplitR; first done. iIntros "!> Hl !> !>".
+    iExists l, vl, _. iFrame "∗#". iSplitR; first done.
+    destruct s; last admit. rewrite bi.True_sep. iIntros "!> Hl !> !>".
     iExists _. iFrame. simpl. done.
-  Qed.
+  Admitted.
 
   Lemma type_new_instr {E L} (n : Z) :
     0 ≤ n →
@@ -349,7 +350,7 @@ Section typing.
   Lemma type_letalloc_n {E L} ty ty1 ty2 C T T' (x : string) p e :
     Closed [] p → Closed (x :b: []) e →
     tctx_extract_hasty E L p ty1 T T' →
-    (⊢ typed_read E L ty1 ty ty2) →
+    (⊢ typed_read true E L ty1 ty ty2) →
     (∀ (v : val),
         typed_body E L C ((v ◁ own_ptr (ty.(ty_size)) ty)::(p ◁ ty2)::T') (subst x v e)) -∗
     typed_body E L C T (letalloc: x <-{ty.(ty_size)} !p in e).

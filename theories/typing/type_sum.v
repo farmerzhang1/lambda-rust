@@ -242,7 +242,7 @@ Section case.
   Lemma type_sum_memcpy_instr {E L} (i : nat) tyl ty1 ty1' ty2 ty2' ty p1 p2 :
     tyl !! i = Some ty →
     (⊢ typed_write E L ty1 (sum tyl) ty1') →
-    (⊢ typed_read E L ty2 ty ty2') →
+    (⊢ typed_read true E L ty2 ty ty2') →
     ⊢ typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2]
                (p1 <-{ty.(ty_size),Σ i} !p2) (λ _, [p1 ◁ ty1'; p2 ◁ ty2']).
   Proof.
@@ -260,7 +260,7 @@ Section case.
     wp_bind p1. iApply (wp_wand with "[]"); first by iApply (wp_eval_path). iIntros (? ->).
     wp_op. wp_bind p2. iApply (wp_hasty with "Hp2"). iIntros (v2 Hv2) "Hty2".
     rewrite typed_read_eq in Hr.
-    iMod (Hr with "[] LFT HE Htl HL2 Hty2") as (l2 vl2 q) "(% & H↦2 & Hty & Hr)"=>//=.
+    iMod (Hr with "[] LFT HE Htl HL2 Hty2") as (l2 vl2 q) "(% & _ & H↦2 & Hty & Hr)"=>//=.
     clear Hr. subst. assert (ty.(ty_size) ≤ list_ty_size vl1).
     { revert i Hty. rewrite lty_cons H1 /= in Hlen. apply eq_add_S in Hlen. rewrite Hlen. clear.
       induction tyl as [|ty' tyl IH]=>//= -[|i] /=.
@@ -302,7 +302,7 @@ Section case.
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →
     tyl !! (Z.to_nat i) = Some ty →
     (⊢ typed_write E L ty1 sty ty1') →
-    (⊢ typed_read E L ty2 ty ty2') →
+    (⊢ typed_read true E L ty2 ty ty2') →
     Z.of_nat (ty.(ty_size)) = n →
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e -∗
     typed_body E L C T (p1 <-{n,Σ i} !p2 ;; e).

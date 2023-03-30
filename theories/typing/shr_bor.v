@@ -84,7 +84,7 @@ Section typing.
   Qed.
 
   Lemma read_shr E L κ ty :
-    Copy ty → lctx_lft_alive E L κ → ⊢ typed_read E L (&shr{κ}ty) ty (&shr{κ}ty).
+    Copy ty → lctx_lft_alive E L κ → ⊢ typed_read true E L (&shr{κ}ty) ty (&shr{κ}ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hcopy Halive) "!>".
     iIntros ([[]| | |] tid F qmax qL ?) "#LFT #HE Htl HL #Hshr"; try done.

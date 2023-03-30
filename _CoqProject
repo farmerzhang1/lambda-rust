@@ -29,6 +29,7 @@ theories/lang/proofmode.v
 theories/lang/tactics.v
 theories/lang/lib/memcpy.v
 theories/lang/lib/new_delete.v
+theories/lang/lib/arc.v
 
 theories/typing/base.v
 theories/typing/type.v
@@ -53,6 +54,8 @@ theories/typing/cont.v
 theories/typing/fixpoint.v
 theories/typing/type_sum.v
 theories/typing/typing.v
+theories/typing/lib/panic.v
+theories/typing/lib/option.v
 
 theories/typing/examples/fixpoint.v
 theories/typing/examples/get_x.v

@@ -24,6 +24,13 @@ End int.
 Section typing.
   Context `{!typeGS Σ}.
 
+  Lemma tctx_incl_int_lit E L T (n : nat) : tctx_incl E L T [(#n)%V ◁ int].
+  Proof.
+    iIntros (???) "_ _ $ _ !>".
+    rewrite tctx_interp_singleton /tctx_elt_interp.
+    iExists (#n)%V; iSplit; done.
+  Qed.
+
   Lemma type_int_instr (z : Z) : typed_val #z int.
   Proof.
     iIntros (E L tid ?) "_ _ $ $ _". iApply wp_value.

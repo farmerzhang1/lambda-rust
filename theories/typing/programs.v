@@ -83,21 +83,25 @@ Section typing.
      mapsto_pred instead (i.e., l ↦∗: ty.(ty_own) tid). However, that would
      make work for some of the provers way harder, since they'd have to show
      that nobody could possibly have changed the vl (because only half the
-     fraction was given). So we go with the definition that is easier to prove. *)
-  Definition typed_read_def (E : elctx) (L : llctx) (ty1 ty ty2 : type) : iProp Σ :=
+     fraction was given). So we go with the definition that is easier to prove.
+    
+     update: to account for reading records,
+     we add an option to control the representation of vl
+  *)
+  Definition typed_read_def (size1 : bool) (E : elctx) (L : llctx) (ty1 ty ty2 : type) : iProp Σ :=
     (□ ∀ v tid F qmax qL, ⌜↑lftN ∪ ↑lrustN ⊆ F⌝ →
       lft_ctx -∗ elctx_interp E -∗ na_own tid F -∗
       llctx_interp_noend qmax L qL -∗ ty1.(ty_own) tid [v] ={F}=∗
-        ∃ (l : loc) vl q, ⌜v = #l⌝ ∗ l ↦∗{q} vl ∗ ▷ ty.(ty_own) tid vl ∗
+        ∃ (l : loc) vl q, ⌜v = #l⌝ ∗ (if size1 then True else ∃v, ⌜vl = [v]⌝) ∗ l ↦∗{q} vl ∗ ▷ ty.(ty_own) tid vl ∗
               (l ↦∗{q} vl ={F}=∗ na_own tid F ∗
                               llctx_interp_noend qmax L qL ∗ ty2.(ty_own) tid [v]))%I.
   Definition typed_read_aux : seal (@typed_read_def). Proof. by eexists. Qed.
   Definition typed_read := typed_read_aux.(unseal).
   Definition typed_read_eq : @typed_read = @typed_read_def := typed_read_aux.(seal_eq).
-  Global Arguments typed_read _ _ _%T _%T _%T.
+  Global Arguments typed_read _ _ _ _%T _%T _%T.
 
-  Global Instance typed_read_persistent (E : elctx) (L : llctx) (ty1 ty ty2 : type) :
-    Persistent (typed_read E L ty1 ty ty2).
+  Global Instance typed_read_persistent s (E : elctx) (L : llctx) (ty1 ty ty2 : type) :
+    Persistent (typed_read s E L ty1 ty ty2).
   Proof. rewrite typed_read_eq. apply _. Qed.
 End typing.
 
@@ -253,7 +257,7 @@ Section typing_rules.
     iMod (Hwrt with "[] LFT HE HL Hown1") as (l vl) "([% %] & Hl & Hclose)"; first done.
     subst v1. iDestruct (ty_size_eq with "Hown2") as "#Hsz". iDestruct "Hsz" as %Hsz.
     rewrite <-Hsz in *. rewrite lty_size_singleton in H0. symmetry in H0.
-    iApply wp_fupd. 
+    iApply wp_fupd.
     admit.
   Admitted.
     (* wp_write_vec. *)
@@ -279,7 +283,7 @@ Section typing_rules.
   Proof. iIntros. by iApply type_seq; first apply type_assign_instr. Qed.
 
   Lemma type_deref_instr {E L} ty ty1 ty1' p :
-    ty.(ty_size) = 1%nat → (⊢ typed_read E L ty1 ty ty1') →
+    ty.(ty_size) = 1%nat → (⊢ typed_read true E L ty1 ty ty1') →
     (⊢ typed_instruction E L [p ◁ ty1] (!p) (λ v, [p ◁ ty1'; v ◁ ty])).
   Proof.
     iIntros (Hsz Hread tid qmax) "#LFT #HE Htl HL Hp".
@@ -288,7 +292,7 @@ Section typing_rules.
     rewrite typed_read_eq in Hread.
     iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
     iMod (Hread with "[] LFT HE Htl HL Hown") as
-        (l vl q) "(% & Hl & Hown & Hclose)"; first done.
+        (l vl q) "(% & _ & Hl & Hown & Hclose)"; first done.
     subst v. iDestruct (ty_size_eq with "Hown") as "#>%". rewrite ->Hsz in *.
     apply length1_size1 in H0.
     destruct vl as [|v [|]]; try done.
@@ -299,18 +303,46 @@ Section typing_rules.
     by iFrame.
   Qed.
 
+  Lemma type_deref_instr' {E L} ty ty1 ty1' p :
+    (⊢ typed_read false E L ty1 ty ty1') →
+    (⊢ typed_instruction E L [p ◁ ty1] (!p) (λ v, [p ◁ ty1'; v ◁ ty])).
+  Proof.
+    iIntros (Hread tid qmax) "#LFT #HE Htl HL Hp".
+    rewrite tctx_interp_singleton. wp_bind p. iApply (wp_hasty with "Hp").
+    iIntros (v) "% Hown".
+    rewrite typed_read_eq in Hread.
+    iDestruct (llctx_interp_acc_noend with "HL") as "[HL HLclose]".
+    iMod (Hread with "[] LFT HE Htl HL Hown") as
+        (l vl q) "(% & Hv & Hl & Hown & Hclose)"; first done.
+    subst v.
+    iDestruct "Hv" as (v) "%". subst vl.
+    rewrite heap_mapsto_vec_singleton. iApply wp_fupd. wp_read.
+    iMod ("Hclose" with "Hl") as "($ & HL & Hown2)".
+    iDestruct ("HLclose" with "HL") as "$".
+    rewrite tctx_interp_cons tctx_interp_singleton tctx_hasty_val tctx_hasty_val' //.
+    by iFrame.
+  Qed.
+
   Lemma type_deref {E L} ty1 C T T' ty ty1' x p e:
     Closed (x :b: []) e →
     tctx_extract_hasty E L p ty1 T T' →
-    (⊢ typed_read E L ty1 ty ty1') →
+    (⊢ typed_read true E L ty1 ty ty1') →
     ty.(ty_size) = 1%nat →
     (∀ (v : val), typed_body E L C ((p ◁ ty1') :: (v ◁ ty) :: T') (subst' x v e)) -∗
     typed_body E L C T (let: x := !p in e).
   Proof. iIntros. by iApply type_let; [apply type_deref_instr|solve_typing|]. Qed.
 
+  Lemma type_deref' {E L} ty1 C T T' ty ty1' x p e:
+    Closed (x :b: []) e →
+    tctx_extract_hasty E L p ty1 T T' →
+    (⊢ typed_read false E L ty1 ty ty1') →
+    (∀ (v : val), typed_body E L C ((p ◁ ty1') :: (v ◁ ty) :: T') (subst' x v e)) -∗
+    typed_body E L C T (let: x := !p in e).
+  Proof. iIntros. by iApply type_let; [apply type_deref_instr'|solve_typing|]. Qed.
+
   Lemma type_memcpy_iris E L qmax qL tid ty ty1 ty1' ty2 ty2' (n : Z) p1 p2 :
     Z.of_nat (ty.(ty_size)) = n →
-    typed_write E L ty1 ty ty1' -∗ typed_read E L ty2 ty ty2' -∗
+    typed_write E L ty1 ty ty1' -∗ typed_read true E L ty2 ty ty2' -∗
     {{{ lft_ctx ∗ elctx_interp E ∗ na_own tid ⊤ ∗ llctx_interp_noend qmax L qL ∗
         tctx_elt_interp tid (p1 ◁ ty1) ∗ tctx_elt_interp tid (p2 ◁ ty2) }}}
       (p1 <-{n} !p2)
@@ -325,7 +357,7 @@ Section typing_rules.
     iMod ("Hwrt" with "[] LFT HE HL1 Hown1")
       as (l1 vl1) "([% %] & Hl1 & Hcl1)"; first done.
     iMod ("Hread" with "[] LFT HE Htl HL2 Hown2")
-      as (l2 vl2 q2) "(% & Hl2 & Hown2 & Hcl2)"; first done.
+      as (l2 vl2 q2) "(% & _ & Hl2 & Hown2 & Hcl2)"; first done.
     iDestruct (ty_size_eq with "Hown2") as "#>%". subst v1 v2. iApply wp_fupd.
     iApply (wp_memcpy with "[$Hl1 $Hl2]"); try congruence; [].
     iNext. iIntros "[Hl1 Hl2]". iApply ("HΦ" with "[> -]"). rewrite !tctx_hasty_val' //.
@@ -337,7 +369,7 @@ Section typing_rules.
   Lemma type_memcpy_instr {E L} ty ty1 ty1' ty2 ty2' (n : Z) p1 p2 :
     Z.of_nat (ty.(ty_size)) = n →
     (⊢ typed_write E L ty1 ty ty1') →
-    (⊢ typed_read E L ty2 ty ty2') →
+    (⊢ typed_read true E L ty2 ty ty2') →
     ⊢ typed_instruction E L [p1 ◁ ty1; p2 ◁ ty2] (p1 <-{n} !p2)
                       (λ _, [p1 ◁ ty1'; p2 ◁ ty2']).
   Proof.
@@ -353,7 +385,7 @@ Section typing_rules.
     Closed [] e →
     tctx_extract_ctx E L [p1 ◁ ty1; p2 ◁ ty2] T T' →
     (⊢ typed_write E L ty1 ty ty1') →
-    (⊢ typed_read E L ty2 ty ty2') →
+    (⊢ typed_read true E L ty2 ty ty2') →
     Z.of_nat (ty.(ty_size)) = n →
     typed_body E L C ((p1 ◁ ty1') :: (p2 ◁ ty2') :: T') e -∗
     typed_body E L C T (p1 <-{n} !p2;; e).

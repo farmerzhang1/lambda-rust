@@ -145,7 +145,7 @@ Section typing.
   Qed.
 
   Lemma read_uniq E L κ ty :
-    Copy ty → lctx_lft_alive E L κ → ⊢ typed_read E L (&uniq{κ}ty) ty (&uniq{κ}ty).
+    Copy ty → lctx_lft_alive E L κ → ⊢ typed_read true E L (&uniq{κ}ty) ty (&uniq{κ}ty).
   Proof.
     rewrite typed_read_eq. iIntros (Hcopy Halive) "!>".
     iIntros ([[]| | |] tid F qmax qL ?) "#LFT #HE Htl HL Hown"; try done.
